@@ -1,0 +1,329 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="description"
+        content="AI Learning Performance Analytics – Analyze student performance with AI-powered insights and detailed reports." />
+    <title>AI Learning Performance Analytics</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap"
+        rel="stylesheet" />
+    <link rel="stylesheet" href="style.css" />
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+</head>
+
+<body>
+    <!-- ===== HEADER ===== -->
+    <header class="app-header">
+        <div class="container header-inner">
+            <div class="logo" id="logo-home">
+                <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="var(--primary)" stroke-width="2"
+                    stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z" />
+                    <path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z" />
+                </svg>
+                <span>AI Learning Analytics</span>
+            </div>
+            <nav class="header-nav" id="header-nav"></nav>
+        </div>
+    </header>
+
+    <!-- ===== PAGE 1: UPLOAD ===== -->
+    <main id="page-upload" class="page active">
+        <div class="container upload-container">
+            <div class="upload-card fade-in">
+                <div class="upload-icon">
+                    <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="var(--primary)"
+                        stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                        <polyline points="17 8 12 3 7 8" />
+                        <line x1="12" y1="3" x2="12" y2="15" />
+                    </svg>
+                </div>
+                <h1>Upload Student Data</h1>
+                <p class="upload-subtitle">Drag &amp; drop an Excel file or click to browse</p>
+
+                <div class="drop-zone" id="drop-zone">
+                    <input type="file" id="file-input" accept=".xlsx,.xls,.csv" hidden />
+                    <div class="drop-zone-content">
+                        <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="var(--text-light)"
+                            stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+                            <polyline points="14 2 14 8 20 8" />
+                            <line x1="16" y1="13" x2="8" y2="13" />
+                            <line x1="16" y1="17" x2="8" y2="17" />
+                            <polyline points="10 9 9 9 8 9" />
+                        </svg>
+                        <p>Drop your <strong>.xlsx</strong> or <strong>.csv</strong> file here</p>
+                    </div>
+                </div>
+
+                <button class="btn btn-primary" id="btn-upload">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                        stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                        <polyline points="17 8 12 3 7 8" />
+                        <line x1="12" y1="3" x2="12" y2="15" />
+                    </svg>
+                    Upload File
+                </button>
+
+                <button class="btn btn-ghost btn-template" id="btn-template">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                        stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                        <polyline points="7 10 12 15 17 10" />
+                        <line x1="12" y1="15" x2="12" y2="3" />
+                    </svg>
+                    Download Sample Template (.xlsx)
+                </button>
+
+                <div class="file-info" id="file-info"></div>
+
+                <!-- Processing overlay -->
+                <div class="processing-overlay" id="processing-overlay">
+                    <div class="spinner"></div>
+                    <p>Processing your data…</p>
+                    <div class="progress-bar">
+                        <div class="progress-fill" id="progress-fill"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- ===== PAGE 2: DASHBOARD ===== -->
+    <section id="page-dashboard" class="page">
+        <div class="container dashboard-container">
+            <div class="page-title fade-in">
+                <h1>Dashboard Overview</h1>
+                <p>Performance summary for all students</p>
+            </div>
+
+            <!-- Summary Cards -->
+            <div class="summary-cards fade-in">
+                <div class="summary-card" id="card-total">
+                    <div class="card-icon blue">
+                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                            stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
+                            <circle cx="9" cy="7" r="4" />
+                            <path d="M23 21v-2a4 4 0 0 0-3-3.87" />
+                            <path d="M16 3.13a4 4 0 0 1 0 7.75" />
+                        </svg>
+                    </div>
+                    <div class="card-data">
+                        <span class="card-value" id="val-total">0</span>
+                        <span class="card-label">Total Students</span>
+                    </div>
+                </div>
+                <div class="summary-card" id="card-avg">
+                    <div class="card-icon green">
+                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                            stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <line x1="18" y1="20" x2="18" y2="10" />
+                            <line x1="12" y1="20" x2="12" y2="4" />
+                            <line x1="6" y1="20" x2="6" y2="14" />
+                        </svg>
+                    </div>
+                    <div class="card-data">
+                        <span class="card-value" id="val-avg">0</span>
+                        <span class="card-label">Class Average</span>
+                    </div>
+                </div>
+                <div class="summary-card" id="card-high">
+                    <div class="card-icon purple">
+                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                            stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <polygon
+                                points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
+                        </svg>
+                    </div>
+                    <div class="card-data">
+                        <span class="card-value" id="val-high">0</span>
+                        <span class="card-label">Highest Score</span>
+                    </div>
+                </div>
+                <div class="summary-card" id="card-below">
+                    <div class="card-icon red">
+                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                            stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <circle cx="12" cy="12" r="10" />
+                            <line x1="12" y1="8" x2="12" y2="12" />
+                            <line x1="12" y1="16" x2="12.01" y2="16" />
+                        </svg>
+                    </div>
+                    <div class="card-data">
+                        <span class="card-value" id="val-below">0</span>
+                        <span class="card-label">Below Average</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Charts -->
+            <div class="charts-row fade-in">
+                <div class="chart-card">
+                    <h3>Correct Rate per Question</h3>
+                    <canvas id="chart-questions"></canvas>
+                </div>
+                <div class="chart-card">
+                    <h3>Score Distribution</h3>
+                    <canvas id="chart-distribution"></canvas>
+                </div>
+            </div>
+
+            <!-- Question Analysis Table -->
+            <div class="table-card fade-in">
+                <h3>📊 Question Analysis</h3>
+                <div class="table-wrap">
+                    <table id="question-analysis-table">
+                        <thead>
+                            <tr>
+                                <th>Question</th>
+                                <th>Total Correct</th>
+                                <th>Total Wrong</th>
+                                <th>Class Correct %</th>
+                                <th>Difficulty</th>
+                            </tr>
+                        </thead>
+                        <tbody id="question-analysis-tbody"></tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Student Table -->
+            <div class="table-card fade-in">
+                <h3>Student Performance Table</h3>
+                <div class="table-wrap">
+                    <table id="student-table">
+                        <thead>
+                            <tr>
+                                <th>#</th>
+                                <th>Name</th>
+                                <th>Total Score</th>
+                                <th>Rank</th>
+                                <th>Risk Level</th>
+                                <th>Action</th>
+                            </tr>
+                        </thead>
+                        <tbody id="student-tbody"></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ===== PAGE 3: STUDENT DETAIL ===== -->
+    <section id="page-detail" class="page">
+        <div class="container detail-container">
+            <button class="btn btn-ghost" id="btn-back">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                    stroke-linecap="round" stroke-linejoin="round">
+                    <line x1="19" y1="12" x2="5" y2="12" />
+                    <polyline points="12 19 5 12 12 5" />
+                </svg>
+                Back to Dashboard
+            </button>
+
+            <!-- Student Overview -->
+            <div class="detail-overview fade-in">
+                <div class="student-avatar" id="student-avatar">A</div>
+                <div class="student-meta">
+                    <h2 id="detail-name">—</h2>
+                    <div class="meta-pills">
+                        <span class="pill pill-score">Score: <strong id="detail-score">0</strong>/5</span>
+                        <span class="pill pill-rank">Rank: <strong id="detail-rank">0</strong></span>
+                        <span class="pill" id="detail-diff-pill">Diff: <strong id="detail-diff">0</strong></span>
+                        <span class="pill" id="detail-trend-pill"><strong id="detail-trend">—</strong></span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Question Analysis -->
+            <div class="detail-section fade-in">
+                <h3>📊 Question Analysis</h3>
+                <div class="table-wrap">
+                    <table id="question-table">
+                        <thead>
+                            <tr>
+                                <th>Question</th>
+                                <th>Student Score</th>
+                                <th>Class Correct %</th>
+                                <th>Comment</th>
+                            </tr>
+                        </thead>
+                        <tbody id="question-tbody"></tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- AI Evaluation -->
+            <div class="detail-section fade-in">
+                <h3>🤖 AI Evaluation</h3>
+                <div class="ai-box" id="ai-evaluation"></div>
+            </div>
+
+            <!-- Improvement Roadmap -->
+            <div class="detail-section fade-in">
+                <h3>🗺️ Improvement Roadmap</h3>
+                <div class="timeline">
+                    <div class="timeline-item">
+                        <div class="timeline-marker"></div>
+                        <div class="timeline-content">
+                            <h4>Week 1 – Foundation Review</h4>
+                            <p>Revisit core concepts in areas where the student scored below the class average. Focus on
+                                building a strong conceptual foundation.</p>
+                        </div>
+                    </div>
+                    <div class="timeline-item">
+                        <div class="timeline-marker"></div>
+                        <div class="timeline-content">
+                            <h4>Week 2 – Accuracy Training</h4>
+                            <p>Targeted exercises on frequently-missed question types. Emphasis on careful reading and
+                                methodical problem-solving.</p>
+                        </div>
+                    </div>
+                    <div class="timeline-item">
+                        <div class="timeline-marker"></div>
+                        <div class="timeline-content">
+                            <h4>Week 3 – Practice Tests</h4>
+                            <p>Simulate real exam conditions with timed practice tests. Identify remaining weak spots
+                                and refine strategies.</p>
+                        </div>
+                    </div>
+                    <div class="timeline-item">
+                        <div class="timeline-marker"></div>
+                        <div class="timeline-content">
+                            <h4>Week 4 – Reassessment</h4>
+                            <p>Final evaluation to measure improvement. Compare results with initial performance and
+                                adjust the learning path accordingly.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Download Button -->
+            <div class="detail-actions fade-in">
+                <button class="btn btn-primary" id="btn-download">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                        stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                        <polyline points="7 10 12 15 17 10" />
+                        <line x1="12" y1="15" x2="12" y2="3" />
+                    </svg>
+                    Download Student Report (PDF)
+                </button>
+            </div>
+        </div>
+    </section>
+
+    <script src="script.js"></script>
+</body>
+
+</html>
