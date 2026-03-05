@@ -1,0 +1,718 @@
+{
+  "nodes": [
+    {
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "mode": "list",
+          "value": "gpt-4.1-mini"
+        },
+        "builtInTools": {},
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1.3,
+      "position": [
+        32,
+        688
+      ],
+      "id": "376d8704-55cd-4384-bc27-2bf8950b6b5f",
+      "name": "OpenAI Chat Model",
+      "credentials": {
+        "openAiApi": {
+          "id": "tGeafzDy1qMYYFrQ",
+          "name": "woku_zalo"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// Webhook input structure:\n// items = [ { json: { headers, params, query, body: [ {row1}, {row2}, ... ] } } ]\n// Output: 1 item / học sinh với: student_id, name, class, C1..C13, total_raw, total_10\n\nfunction pickKey(obj, containsText) {\n  return Object.keys(obj).find(k => k.includes(containsText));\n}\n\nconst root = items?.[0]?.json ?? {};\nconst rows = Array.isArray(root.body) ? root.body : [];  // <-- 20 học sinh nằm ở đây\n\nconst outputItems = rows.map((r) => {\n  const out = {};\n\n  // basic fields\n  out.student_id = r[\"Mã HS\"] ?? r[\"Ma HS\"] ?? r[\"ID\"] ?? r[\"Student ID\"] ?? null;\n  out.name = r[\"Họ và tên\"] ?? r[\"Ho va ten\"] ?? r[\"Name\"] ?? null;\n  out.class = r[\"Lớp\"] ?? r[\"Lop\"] ?? r[\"Class\"] ?? null;\n\n  // map Câu 1..13 (key dài -> tìm bằng \"Câu i\")\n  let sum = 0;\n  for (let i = 1; i <= 13; i++) {\n    const k =\n      pickKey(r, Câu ${i}\\n) ||\n      pickKey(r, Câu ${i}) ||\n      pickKey(r, Cau ${i}); // phòng trường hợp mất dấu\n\n    const val = k ? Number(r[k]) : 0;\n    out[`C${i}`] = Number.isFinite(val) ? val : 0;\n    sum += out[`C${i}`];\n  }\n\n  // totals\n  const totalKey = pickKey(r, \"Tổng điểm thô\") || pickKey(r, \"Tong diem tho\");\n  const totalRaw = totalKey != null ? Number(r[totalKey]) : sum;\n  out.total_raw = Number.isFinite(totalRaw) ? totalRaw : sum;\n\n  const total10Key = pickKey(r, \"Điểm quy đổi thang 10\") || pickKey(r, \"Diem quy doi thang 10\");\n  const total10 = total10Key != null ? Number(r[total10Key]) : null;\n  out.total_10 = Number.isFinite(total10) ? total10 : null;\n\n  return { json: out };\n});\n\nreturn outputItems;"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -1472,
+        192
+      ],
+      "id": "cb849e66-ac22-40e6-9ad5-0f37411fc073",
+      "name": "Count Students"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Input: items = danh sách học sinh đã có C1..C13\n// Output: 13 dòng, mỗi dòng là 1 \"chuẩn\" với Fail/Pass/Excellent\n\nconst standardMap = [\n  { c: \"C1\",  code: \"3Np.05\" },\n  { c: \"C2\",  code: \"3Np.01\" },\n  { c: \"C3\",  code: \"3Np.04\" },\n  { c: \"C4\",  code: \"3Np.03\" },\n  { c: \"C5\",  code: \"3Nm.02\" },\n  { c: \"C6\",  code: \"3Nc.05\" },\n  { c: \"C7\",  code: \"3Ni.07\" },\n  { c: \"C8\",  code: \"3Ni.06\" },\n  { c: \"C9\",  code: \"3Ni.10\" },\n  { c: \"C10\", code: \"TWM.01-02\" },\n  { c: \"C11\", code: \"TWM.03-04\" },\n  { c: \"C12\", code: \"TWM.05-06\" },\n  { c: \"C13\", code: \"TWM.07-08\" },\n];\n\nconst students = items.map(i => i.json);\nconst n = students.length;\n\nfunction bucket(score) {\n  // Fail: 0-1; Pass: 2-3; Excellent: 4\n  if (score <= 1) return \"fail\";\n  if (score <= 3) return \"pass\";\n  return \"excellent\";\n}\n\nconst result = standardMap.map(({c, code}) => {\n  let fail = 0, pass = 0, excellent = 0;\n\n  for (const s of students) {\n    const sc = Number(s[c] ?? 0);\n    const b = bucket(sc);\n    if (b === \"fail\") fail++;\n    else if (b === \"pass\") pass++;\n    else excellent++;\n  }\n\n  const failRate = n ? fail / n : 0;\n  const passRate = n ? pass / n : 0;\n  const excellentRate = n ? excellent / n : 0;\n\n  return {\n    standard_code: code,\n    câu_hỏi: c,\n    số_học_sinh: n,\n    số_học_sinh_rớt: fail,\n    số_học_sinh_đạt: pass,\n    số_học_sinh_đạt_điểm_4: excellent,\n    tỉ_lệ_fail: Math.round(failRate * 1000) / 10,        // %\n    tỉ_lệ_pass: Math.round(passRate * 1000) / 10,        // %\n    tỉ_lệ_excellent: Math.round(excellentRate * 1000) / 10, // %\n  };\n});\n\n// mỗi item 1 chuẩn để dễ đưa ra sheet/dashboard\nreturn result.map(r => ({ json: r }));"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -1248,
+        192
+      ],
+      "id": "8f6f69da-3b5a-4993-b1a1-b3b84ccc6ab6",
+      "name": "Chuẩn (Fail/Pass/Excellent)"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Input: 13 items từ bước trước (mỗi item 1 chuẩn)\n\nconst standards = items.map(i => i.json);\n\nfunction num(v) {\n  const n = Number(v);\n  return Number.isFinite(n) ? n : 0;\n}\n\nconst updated = standards.map(s => {\n  // support 2 naming styles\n  const fail = num(s.fail_rate ?? s[\"tỉ_lệ_fail\"] ?? s[\"ti_le_fail\"] ?? s[\"ti_le_fail_rate\"]);\n  const pass = num(s.pass_rate ?? s[\"tỉ_lệ_pass\"] ?? s[\"ti_le_pass\"] ?? s[\"ti_le_pass_rate\"]);\n\n  const improvement_rate = fail + pass;\n\n  return {\n    ...s,\n    tỉ_lệ_cần_cải_thiện: Math.round(improvement_rate * 10) / 10\n  };\n});\n\n// Sort giảm dần theo improvement_rate\nupdated.sort((a, b) => num(b.improvement_rate) - num(a.improvement_rate));\n\nreturn updated.map(r => ({ json: r }));"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -1040,
+        192
+      ],
+      "id": "3c18c887-5be0-43da-9351-f5e17a586aa0",
+      "name": "Tổng tỉ lệ cần cải thiện"
+    },
+    {
+      "parameters": {
+        "jsCode": "function cleanJsonString(s) {\n  if (!s) return null;\n\n  // bỏ ```json ... ```\n  s = s.replace(/```json/gi, '').replace(/```/g, '').trim();\n\n  // Nếu có dấu nháy bao quanh toàn bộ (do escape)\n  // cố parse trực tiếp trước\n  try {\n    return JSON.parse(s);\n  } catch (e) {\n    // fallback: đôi khi chuỗi đã là JSON string escaped kiểu \"{\\n \\\"a\\\": 1}\"\n    try {\n      const unescaped = JSON.parse(\"${s.replace(/\"/g, '\\\\\"')}\");\n      return JSON.parse(unescaped);\n    } catch (e2) {\n      return null;\n    }\n  }\n}\n\nreturn items.map(item => {\n  const raw = item.json.output; // field output của AI Agent\n  const parsed = cleanJsonString(raw);\n\n  if (!parsed) {\n    return {\n      json: {\n        ...item.json,\n        parse_error: true,\n        raw_output: raw,\n      }\n    };\n  }\n\n  return {\n    json: {\n      ...item.json,\n      ...parsed,\n      parse_error: false,\n    }\n  };\n});"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -272,
+        288
+      ],
+      "id": "fb374a74-2dcb-49f3-bcf4-da0012d04163",
+      "name": "Parse AI output"
+    },
+    {
+      "parameters": {
+        "mode": "combine",
+        "combineBy": "combineByPosition",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3.2,
+      "position": [
+        -48,
+        208
+      ],
+      "id": "7a1d3907-2eb5-455c-af99-263423629045",
+      "name": "Merge By Key"
+    },
+    {
+      "parameters": {
+        "multipleMethods": true,
+        "httpMethod": [
+          "POST",
+          "GET"
+        ],
+        "path": "demo",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        -1760,
+        560
+      ],
+      "id": "0be6c184-55e8-4089-b884-b8b17a74b89f",
+      "name": "Webhook",
+      "webhookId": "253b009e-ab4e-41f1-900d-bbe6ab6d07e8"
+    },
+    {
+      "parameters": {
+        "respondWith": "allIncomingItems",
+        "options": {
+          "responseCode": 200,
+          "responseHeaders": {
+            "entries": [
+              {
+                "name": "Content-Type",
+                "value": "application/json"
+              }
+            ]
+          },
+          "enableStreaming": true
+        }
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.5,
+      "position": [
+        576,
+        560
+      ],
+      "id": "d532ea91-3e58-4adb-b5a4-8d74212741d6",
+      "name": "Respond to Webhook"
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=Bạn là chuyên gia phân tích giáo dục Tiểu học. Bạn viết gợi ý cải thiện NGẮN - CỤ THỂ - DỄ LÀM cho giáo viên và học sinh.\nLuôn trả về JSON đúng format, không thêm chữ ngoài JSON.",
+        "options": {
+          "systemMessage": "=Dưới đây là dữ liệu 1 chuẩn (standard) của lớp. Hãy tạo \"gợi ý cải thiện\" dựa trên tỉ lệ fail/pass/excellent.\n\nYêu cầu:\n- Viết tối đa 3 ý chính, cực cụ thể (ví dụ: \"ôn dạng…, làm 10 bài…, dùng trò chơi…\").\n- Nếu improvement_rate > 70%: ưu tiên can thiệp mạnh + luyện nền tảng.\n- Nếu 40–70%: can thiệp vừa + luyện bài tương tự.\n- Nếu < 40%: duy trì + bài nâng cao nhẹ.\n\nTrả về JSON format:\n{\n  \"standard_code\": \"...\",\n  \"question\": \"...\",\n  \"suggestion\": \"...\"\n}\n\nDATA:\nstandard_code:{{ $json.standard_code }}\ncâu hỏi: {{ $json[\"câu_hỏi\"] }}\nsố học sinh: {{ $json['số_học_sinh'] }}\nsố học sinh rớt: {{ $json['số_học_sinh_rớt'] }}\nsố học sinh qua: {{ $json['số_học_sinh_đạt'] }}\nsố học sinh đạt điểm xuất sắc: {{ $json['số_học_sinh_đạt_điểm_4'] }}\ntỉ lệ fail: {{ $json['tỉ_lệ_fail'] }} %\ntỉ lệ pass: {{ $json['tỉ_lệ_pass'] }} %\nexcellent_count: {{ $json['tỉ_lệ_excellent'] }} %\nimprovement_rate: {{ $json['tỉ_lệ_cần_cải_thiện'] }} %"
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 3,
+      "position": [
+        -688,
+        288
+      ],
+      "id": "4ec2c88f-1757-4bf0-b64e-c744274c2b7c",
+      "name": "AI Agent"
+    },
+    {
+      "parameters": {
+        "content": "WF 1\n",
+        "height": 320,
+        "width": 1904
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -1520,
+        128
+      ],
+      "id": "4fa5dd11-6a5e-43d6-8836-0dc04136e9c1",
+      "name": "Sticky Note"
+    },
+    {
+      "parameters": {
+        "jsCode": "// n8n Code node (Run Once for All Items)\n\n// 1) Lấy body từ Webhook\nconst body = items?.[0]?.json?.body;\n\n// Nếu webhook gửi thẳng object thay vì array\nconst rows = Array.isArray(body) ? body : (body ? [body] : []);\n\n// 2) Helpers\nconst isQuestionKey = (k) => typeof k === 'string' && k.trim().startsWith('Câu ');\nconst toNumber = (v) => {\n  const n = Number(v);\n  return Number.isFinite(n) ? n : 0;\n};\n\n// Parse mã chuẩn từ text key của câu hỏi, ví dụ:\n// \"Câu 1...\\nChuẩn:\\n3Np.05 ...\" hoặc \"Chuẩn: TWM.01-02 ...\"\nconst extractStandardCode = (questionKey) => {\n  if (typeof questionKey !== 'string') return '';\n  // ưu tiên bắt sau \"Chuẩn:\" hoặc \"Chuẩn:\\n\"\n  const m = questionKey.match(/Chuẩn:\\s*([\\w.\\-]+(?:\\s*-\\s*[\\w.\\-]+)?)/i);\n  if (!m) return '';\n  return m[1].replace(/\\s+/g, '').replace(/–/g, '-');\n};\n\n// Classify theo điểm 0-4\nconst classify = (score) => {\n  if (score >= 4) return 'excellent';\n  if (score >= 2) return 'pass';\n  return 'fail'; // 0-1\n};\n\n// Risk theo % tổng điểm / 52\nconst riskLevel = (percent) => {\n  if (percent >= 70) return 'Low';\n  if (percent >= 40) return 'Medium';\n  return 'High';\n};\n\n// 3) Transform mỗi học sinh -> output sheet2\nconst out = rows.map((r) => {\n  // lấy các cột câu hỏi\n  const qKeys = Object.keys(r).filter(isQuestionKey);\n\n  let total = 0;\n  let excellent = 0, pass = 0, fail = 0;\n\n  const strong = [];\n  const weak = [];\n  const reinforce = [];\n\n  for (const k of qKeys) {\n    const score = toNumber(r[k]);\n    total += score;\n\n    const type = classify(score);\n    if (type === 'excellent') excellent++;\n    else if (type === 'pass') pass++;\n    else fail++;\n\n    const std = extractStandardCode(k);\n    if (!std) continue;\n\n    if (type === 'excellent') strong.push(std);\n    else if (type === 'fail') weak.push(std);\n    else reinforce.push(std); // pass (2-3)\n  }\n\n  // max 52 (13 câu * 4)\n  const percent = (total / 52) * 100;\n  const diem10 = Math.round((total / 52) * 10 * 10) / 10; // 1 chữ số thập phân\n\n  // unique + join\n  const uniqJoin = (arr) => [...new Set(arr)].join(', ');\n\n  return {\n    // giữ field tiếng Việt\n    \"Mã HS\": r[\"Mã HS\"] ?? r[\"Mã_HS\"] ?? r[\"ma_hs\"] ?? r[\"id\"] ?? null,\n    \"Họ và tên\": r[\"Họ và tên\"] ?? r[\"Họ_tên\"] ?? r[\"ho_ten\"] ?? '',\n    \"Lớp\": r[\"Lớp\"] ?? r[\"lop\"] ?? '',\n\n    \"Tổng điểm\": total,\n    \"Điểm thang 10\": diem10,\n\n    \"Số Excellent\": excellent,\n    \"Số câu Pass\": pass,\n    \"Số câu Fail\": fail,\n    \"Câu hỏi đạt điểm tốt\": uniqJoin(strong),\n    \"Câu hỏi còn yếu\": uniqJoin(weak),\n    \"Câu hỏi cần củng cố\": uniqJoin(reinforce),\n\n    \"Risk Level\": riskLevel(percent),\n\n    // để trống, bước AI sau mới fill\n    \"Đánh giá học sinh\": \"\",\n  };\n});\n\n// 4) Trả về 1 item / 1 học sinh (để ghi sheet dễ)\nreturn out.map((x) => ({ json: x }));"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -1472,
+        544
+      ],
+      "id": "876d3daf-8c9c-48ee-a833-5619632de690",
+      "name": "Normalize + Count per student"
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=Hãy tạo nội dung cho trường \"Đánh giá học sinh\" dựa trên dữ liệu sau.\n\nYÊU CẦU:\n- Viết tiếng Việt.\n- Chỉ 3 ý chính, dạng gạch đầu dòng, mỗi ý phải CỤ THỂ + có định lượng (ví dụ: 10 phút/ngày, 5 bài/tuần, 2 lần/tuần).\n- Dựa theo Risk Level:\n  - High: can thiệp mạnh, ưu tiên củng cố chuẩn yếu + luyện nền tảng, chia nhỏ mục tiêu theo ngày.\n  - Medium: can thiệp vừa, luyện dạng bài ở \"Chuẩn cần củng cố\", kèm kiểm tra ngắn định kỳ.\n  - Low: duy trì, thêm nâng cao vừa phải (bài mở rộng), giữ nhịp luyện tập.\n- Tận dụng \"Chuẩn yếu\" và \"Chuẩn cần củng cố\" để nêu trọng tâm ôn tập.\n- Không nhắc lại nguyên văn dữ liệu đầu vào.\n- Không viết lan man.\n\nCHỈ TRẢ VỀ JSON ĐÚNG 1 KEY DUY NHẤT:\n{\"Đánh giá học sinh\"😕"...\"}  (giá trị là 3 dòng gạch đầu dòng)\n\nDỮ LIỆU:\nMã HS: {{ $json[\"Mã HS\"] }}\nHọ và tên: {{ $json[\"Họ và tên\"] }}\nLớp: {{ $json[\"Lớp\"] }}\nTổng điểm: {{ $json[\"Tổng điểm\"] }}\nĐiểm thang 10: {{ $json[\"Điểm thang 10\"] }}\nSố Excellent: {{ $json[\"Số Excellent\"] }}\nSố Pass: {{ $json[\"Số Pass\"] }}\nSố Fail: {{ $json[\"Số Fail\"] }}\nChuẩn mạnh: {{ $json[\"Chuẩn mạnh\"] }}\nChuẩn yếu: {{ $json[\"Chuẩn yếu\"] }}\nChuẩn cần củng cố: {{ $json[\"Chuẩn cần củng cố\"] }}\nRisk Level: {{ $json[\"Risk Level\"] }}",
+        "options": {
+          "systemMessage": "=Bạn là trợ lý giáo viên. Luôn tuân thủ định dạng output do user yêu cầu.\nQUY TẮC BẮT BUỘC:\n- Không dùng markdown, không dùng ```json, không thêm lời giải thích.\n- Nếu user yêu cầu trả JSON thì trả đúng JSON, không thêm chữ nào khác.\n- Không đổi tên key tiếng Việt.\n- Không thêm field khác ngoài field được yêu cầu.\n- Nếu thiếu dữ liệu nào thì vẫn viết gợi ý dựa trên dữ liệu hiện có, không hỏi lại."
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 3,
+      "position": [
+        -1232,
+        656
+      ],
+      "id": "626fbd37-00a2-461d-bff4-43d5c2eb7ca9",
+      "name": "AI Agent1"
+    },
+    {
+      "parameters": {
+        "mode": "combine",
+        "combineBy": "combineByPosition",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3.2,
+      "position": [
+        -560,
+        560
+      ],
+      "id": "31b7c242-8436-4d52-a5f7-54ac9b3e97c9",
+      "name": "Merge By Key1"
+    },
+    {
+      "parameters": {
+        "jsCode": "const data = items.map(i => i.json);\n\n// map ra các record (KHÔNG cần gán r[\"Sheets\"]=1 kiểu assignment trong ngoặc)\nconst rows = data.map(r => ({\n  \"standard_code\": r.standard_code,\n  \"câu_hỏi\": r[\"câu_hỏi\"],\n  \"số_học_sinh\": r[\"số_học_sinh\"],\n  \"số_học_sinh_rớt\": r[\"số_học_sinh_rớt\"],\n  \"số_học_sinh_đạt\": r[\"số_học_sinh_đạt\"],\n  \"số_học_sinh_đạt_điểm_4\": r[\"số_học_sinh_đạt_điểm_4\"],\n  \"tỉ_lệ_fail\": r[\"tỉ_lệ_fail\"],\n  \"tỉ_lệ_pass\": r[\"tỉ_lệ_pass\"],\n  \"tỉ_lệ_excellent\": r[\"tỉ_lệ_excellent\"],\n  \"tỉ_lệ_cần_cải_thiện\": r[\"tỉ_lệ_cần_cải_thiện\"],\n  \"suggestion\": r.suggestion,\n}));\n\nreturn [{\n  json: {\n    \"Sheets\": 1,\n    \"data\": rows\n  }\n}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        160,
+        208
+      ],
+      "id": "253c6bb4-78ef-47d0-99bb-bd707dbcc811",
+      "name": "Parse output Json"
+    },
+    {
+      "parameters": {
+        "jsCode": "const data = items.map(i => i.json);\n\nconst rows = data.map(j => {\n  const r = { ...j };\n\n  // nếu r.Sheets chưa có thì parse từ output để lấy Sheets 2 (nếu có)\n  if (r[\"Sheets\"] == null && typeof r.output === \"string\") {\n    try {\n      const parsed = JSON.parse(r.output);\n      if (parsed && parsed[\"Sheets 2\"] != null) {\n        r[\"Sheets\"] = parsed[\"Sheets 2\"];\n      }\n    } catch (e) {}\n  }\n\n  // ép Sheets = 2 theo yêu cầu\n\n  // bỏ field output cho sạch\n  delete r.output;\n\n  return r;\n});\n\nreturn [{\n  json: {\n    Sheets: 2,\n    data: rows\n  }\n}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -352,
+        560
+      ],
+      "id": "13d4bb3e-2365-4ded-bc2a-20356f1bfc31",
+      "name": "Parse To Json "
+    },
+    {
+      "parameters": {
+        "jsCode": "return items.map((item, index) => {\n  const aiRaw = item.json.output;\n\n  let parsed = {};\n  try {\n    parsed = JSON.parse(aiRaw);\n  } catch (e) {\n    parsed = { \"Đánh giá học sinh\": \"\" };\n  }\n\n  return {\n    json: {\n      ...$input.all()[index].json,   // giữ dữ liệu gốc\n      ...parsed                      // ghi đè \"Đánh giá học sinh\"\n    }\n  };\n});"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -848,
+        656
+      ],
+      "id": "5cdd858e-98cc-4179-a471-1b059dcfcf5c",
+      "name": "Parse Comment"
+    },
+    {
+      "parameters": {
+        "content": "WF2\n",
+        "height": 368,
+        "width": 2272,
+        "color": 4
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -1520,
+        464
+      ],
+      "id": "7bdd20e2-9bd5-437e-afc1-cacad9956509",
+      "name": "WF 2"
+    },
+    {
+      "parameters": {
+        "jsCode": "// n8n Code node (Run Once for All Items)\n// Input: items[0].json.body = array students\n\nconst payload = items[0].json;\nconst students = Array.isArray(payload.body) ? payload.body : [];\n\n// Lấy mã chuẩn từ key cột câu hỏi (vd: 3Np.05, TWM.07-08)\nfunction extractStandardCode(colName) {\n  const m = colName.match(/\\b\\d+[A-Za-z]{1,3}\\.\\d{2}\\b|\\bTWM\\.\\d{2}-\\d{2}\\b/);\n  return m ? m[0] : null;\n}\n\n// Risk theo % đạt trên tổng 52: >=70 Low, 40-69 Medium, <40 High\nfunction calcRisk(total, max = 52) {\n  const percent = max > 0 ? (total / max) * 100 : 0;\n  if (percent >= 70) return \"Low\";\n  if (percent >= 40) return \"Medium\";\n  return \"High\";\n}\n\nconst out = [];\n\nfor (const s of students) {\n  const maHS = s[\"Mã HS\"];\n  const totalRaw = Number(s[\"Tổng điểm thô\\n(Max: 52)\"] ?? 0);\n  const diem10 = Number(s[\"Điểm quy đổi thang 10\"] ?? 0);\n\n  const questionKeys = Object.keys(s).filter(k => k.startsWith(\"Câu \"));\n\n  let failCount = 0;\n  const weakStandards = [];\n\n  for (const k of questionKeys) {\n    const score = Number(s[k] ?? 0);\n    const code = extractStandardCode(k);\n    if (!code) continue;\n\n    // Fail = 0-1 điểm\n    if (score <= 1) {\n      failCount += 1;\n      weakStandards.push(code);\n    }\n  }\n\n  // Filter condition (workflow #3)\n  const isIntervention = (diem10 < 5) || (failCount >= 4);\n  if (!isIntervention) continue;\n\n  out.push({\n    \"Mã HS\": maHS,\n    \"Tổng điểm\": totalRaw,\n    \"Số chuẩn Fail\": failCount,\n    \"Chuẩn yếu\": weakStandards.join(\", \"),\n    \"Risk Level\": calcRisk(totalRaw, 52),\n    \"Gợi ý can thiệp\": \"\"\n  });\n}\n\n// Output: mỗi HS cần can thiệp = 1 item\nreturn out.map(x => ({ json: x }));"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -1472,
+        880
+      ],
+      "id": "e7cf5984-6ae3-491c-b7b7-8baecb140857",
+      "name": "Filter + Extract"
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=Hãy tạo \"Gợi ý can thiệp\" cho học sinh dựa trên dữ liệu sau:\n\nMã HS: {{$json[\"Mã HS\"]}}\nTổng điểm: {{$json[\"Tổng điểm\"]}}\nSố chuẩn Fail: {{$json[\"Số chuẩn Fail\"]}}\nChuẩn yếu: {{$json[\"Chuẩn yếu\"]}}\nRisk Level: {{$json[\"Risk Level\"]}}\n\nYÊU CẦU:\n- Chỉ trả về JSON theo schema đã nêu ở System.",
+        "options": {
+          "systemMessage": "=Bạn là trợ lý giáo viên tiểu học, chuyên đề xuất can thiệp học tập dựa trên dữ liệu đánh giá.\nMục tiêu: tạo kế hoạch can thiệp NGẮN GỌN, thực tế, dễ làm trong 1–2 tuần.\n\nQuy tắc bắt buộc:\n- Viết tiếng Việt, giọng hướng dẫn rõ ràng.\n- Chỉ tập trung vào các \"Chuẩn yếu\" và số lượng chuẩn Fail.\n- Không bịa thêm dữ liệu ngoài input.\n- Output PHẢI là JSON thuần (không markdown, không giải thích), đúng schema:\n{\n  \"Gợi ý can thiệp\": \"...\"\n}\n\nRàng buộc nội dung \"Gợi ý can thiệp\":\n- 3 gạch đầu dòng, mỗi dòng bắt đầu bằng \"- \".\n- Mỗi dòng 1 hành động cụ thể + tần suất (vd: 15 phút/ngày, 3 buổi/tuần, 2 bài/tuần).\n- Nhắc lại tối thiểu 1 mã chuẩn trong Chuẩn yếu (vd: TWM.07-08)."
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 3,
+      "position": [
+        -1232,
+        1008
+      ],
+      "id": "a2158529-b8cd-43da-a9d5-65d2c2b83d94",
+      "name": "AI Agent2"
+    },
+    {
+      "parameters": {
+        "jsCode": "function safeJsonParse(s) {\n  try { return JSON.parse(s); } catch { return null; }\n}\n\nreturn $input.all().map((item) => {\n  const j = item.json;\n  const raw = j.output;\n\n  let parsed = typeof raw === \"string\" ? safeJsonParse(raw) : null;\n  if (!parsed && raw && typeof raw === \"object\") parsed = raw;\n\n  const suggestion =\n    (parsed && (parsed[\"Gợi ý can thiệp\"] || parsed[\"Goi y can thiep\"])) ??\n    (typeof raw === \"string\" ? raw : \"\");\n\n  return {\n    json: {\n      ...j,\n      \"Gợi ý can thiệp\": suggestion,\n    },\n  };\n});"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -672,
+        1008
+      ],
+      "id": "e1172b2e-ad74-4e35-beca-ac74e79a24b4",
+      "name": "Code in JavaScript"
+    },
+    {
+      "parameters": {
+        "mode": "combine",
+        "combineBy": "combineByPosition",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3.2,
+      "position": [
+        -400,
+        896
+      ],
+      "id": "b1f74510-fb7d-4303-86fa-ca4d592a2906",
+      "name": "Merge By Key2"
+    },
+    {
+      "parameters": {
+        "jsCode": "function safeJsonParse(s) {\n  try { return JSON.parse(s); } catch { return null; }\n}\n\nfunction cleanText(s) {\n  if (s == null) return \"\";\n  let t = String(s);\n\n  const parsed = safeJsonParse(t);\n  if (parsed && typeof parsed === \"object\") {\n    t = parsed[\"Gợi ý can thiệp\"] ?? parsed[\"Goi y can thiep\"] ?? t;\n  }\n\n  t = t\n    .replace(/\\\\n/g, \"\\n\")\n    .replace(/\\\\\"/g, '\"')\n    .trim();\n\n  t = t.replace(/\\n{3,}/g, \"\\n\\n\");\n  return t;\n}\n\nfunction pickIntervention(j) {\n  if (j[\"Gợi ý can thiệp\"]) return j[\"Gợi ý can thiệp\"];\n\n  if (typeof j.output === \"string\") {\n    const parsed = safeJsonParse(j.output);\n    if (parsed && typeof parsed === \"object\") {\n      return parsed[\"Gợi ý can thiệp\"] ?? parsed[\"Goi y can thiep\"] ?? j.output;\n    }\n    return j.output;\n  }\n\n  return \"\";\n}\n\nconst data = $input.all().map(i => i.json);\n\nconst rows = data.map(j => ({\n  \"Mã HS\": j[\"Mã HS\"],\n  \"Tổng điểm\": j[\"Tổng điểm\"],\n  \"Số chuẩn Fail\": j[\"Số chuẩn Fail\"],\n  \"Chuẩn yếu\": j[\"Chuẩn yếu\"],\n  \"Risk Level\": j[\"Risk Level\"],\n  \"Gợi ý can thiệp\": cleanText(pickIntervention(j)),\n}));\n\nreturn [{\n  json: {\n    Sheets: 3,\n    data: rows\n  }\n}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -128,
+        896
+      ],
+      "id": "14c537d8-6304-45fa-b7db-3c3670c7f039",
+      "name": "Parse to Json"
+    },
+    {
+      "parameters": {
+        "content": "WF3",
+        "height": 320,
+        "width": 1872,
+        "color": 5
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -1520,
+        848
+      ],
+      "id": "eb6e6eed-09f9-445c-8b0f-844782e3b6b7",
+      "name": "Sticky Note1"
+    },
+    {
+      "parameters": {
+        "numberInputs": 3
+      },
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3.2,
+      "position": [
+        384,
+        544
+      ],
+      "id": "f9e61b3e-7474-4be5-a4b8-57a4752904df",
+      "name": "Merge"
+    }
+  ],
+  "connections": {
+    "OpenAI Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          },
+          {
+            "node": "AI Agent1",
+            "type": "ai_languageModel",
+            "index": 0
+          },
+          {
+            "node": "AI Agent2",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Count Students": {
+      "main": [
+        [
+          {
+            "node": "Chuẩn (Fail/Pass/Excellent)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Chuẩn (Fail/Pass/Excellent)": {
+      "main": [
+        [
+          {
+            "node": "Tổng tỉ lệ cần cải thiện",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Tổng tỉ lệ cần cải thiện": {
+      "main": [
+        [
+          {
+            "node": "Merge By Key",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "AI Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Parse AI output": {
+      "main": [
+        [
+          {
+            "node": "Merge By Key",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "Merge By Key": {
+      "main": [
+        [
+          {
+            "node": "Parse output Json",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "Filter + Extract",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Count Students",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Normalize + Count per student",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI Agent": {
+      "main": [
+        [
+          {
+            "node": "Parse AI output",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Normalize + Count per student": {
+      "main": [
+        [
+          {
+            "node": "AI Agent1",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Merge By Key1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI Agent1": {
+      "main": [
+        [
+          {
+            "node": "Parse Comment",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Merge By Key1": {
+      "main": [
+        [
+          {
+            "node": "Parse To Json ",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Parse output Json": {
+      "main": [
+        [
+          {
+            "node": "Merge",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Parse To Json ": {
+      "main": [
+        [
+          {
+            "node": "Merge",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "Parse Comment": {
+      "main": [
+        [
+          {
+            "node": "Merge By Key1",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "Filter + Extract": {
+      "main": [
+        [
+          {
+            "node": "AI Agent2",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Merge By Key2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI Agent2": {
+      "main": [
+        [
+          {
+            "node": "Code in JavaScript",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code in JavaScript": {
+      "main": [
+        [
+          {
+            "node": "Merge By Key2",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "Merge By Key2": {
+      "main": [
+        [
+          {
+            "node": "Parse to Json",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Parse to Json": {
+      "main": [
+        [
+          {
+            "node": "Merge",
+            "type": "main",
+            "index": 2
+          }
+        ]
+      ]
+    },
+    "Merge": {
+      "main": [
+        [
+          {
+            "node": "Respond to Webhook",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "pinData": {
+    "AI Agent": [
+      {
+        "output": "```json\n{\n  \"standard_code\": \"3Np.05\",\n  \"question\": \"C1\",\n  \"suggestion\": \"Duy trì việc học tập hiện tại; thêm 3 bài tập nâng cao hàng tuần để phát triển kỹ năng và tư duy cho học sinh đã xuất sắc.\"\n}\n```"
+      },
+      {
+        "output": "{\n  \"standard_code\": \"3Np.01\",\n  \"question\": \"C2\",\n  \"suggestion\": \"Duy trì phương pháp hiện tại; tăng cường lồng ghép thử thách nâng cao; tổ chức các trò chơi vận dụng kiến thức để phát huy.\"\n}"
+      },
+      {
+        "output": "{\n  \"standard_code\": \"3Np.04\",\n  \"question\": \"C3\",\n  \"suggestion\": \"Duy trì phương pháp giảng dạy hiện tại; bổ sung bài tập nâng cao giúp học sinh xuất sắc phát triển tư duy; khuyến khích học sinh rớt làm lại và hỏi thêm thầy cô khi gặp khó.\"\n}"
+      },
+      {
+        "output": "{\n  \"standard_code\": \"3Np.03\",\n  \"question\": \"C4\",\n  \"suggestion\": \"Duy trì phương pháp hiện tại, tăng cường bài tập nâng cao 1-2 lần/tuần để phát triển tư duy.\"\n}"
+      },
+      {
+        "output": "{\n  \"standard_code\": \"3Nm.02\",\n  \"question\": \"C5\",\n  \"suggestion\": \"Ôn luyện các dạng bài tập tương tự từng bước, làm thêm ít nhất 5 bài tập liên quan mỗi tuần, ứng dụng trò chơi toán để tăng hứng thú luyện tập.\"\n}"
+      },
+      {
+        "output": "{\n  \"standard_code\": \"3Nc.05\",\n  \"question\": \"C6\",\n  \"suggestion\": \"Duy trì phương pháp hiện tại, tạo thêm các câu hỏi nâng cao để thử thách học sinh xuất sắc.\"\n}"
+      },
+      {
+        "output": "```json\n{\n  \"standard_code\": \"3Ni.07\",\n  \"question\": \"C7\",\n  \"suggestion\": \"Duy trì phương pháp giảng dạy hiện tại; bổ sung các bài nâng cao để thử thách học sinh xuất sắc; khuyến khích học sinh làm thêm đề nâng cao để phát triển khả năng.\"\n}\n```"
+      },
+      {
+        "output": "{\n  \"standard_code\": \"3Ni.06\",\n  \"question\": \"C8\",\n  \"suggestion\": \"Ôn dạng câu hỏi tương tự 3 lần/tuần, làm thêm 10 bài tập giống dạng C8, dùng trò chơi nhóm để tăng hứng thú học tập.\"\n}"
+      },
+      {
+        "output": "{\n  \"standard_code\": \"3Ni.10\",\n  \"question\": \"C9\",\n  \"suggestion\": \"Duy trì phương pháp giảng dạy hiện tại và tăng cường bài tập nâng cao để phát huy năng lực học sinh.\"\n}"
+      },
+      {
+        "output": "{\n  \"standard_code\": \"TWM.01-02\",\n  \"question\": \"C10\",\n  \"suggestion\": \"Ôn tập dạng bài biến đổi đơn giản, làm thêm 10 bài tập tương tự, tổ chức chơi đố vui nhóm để tăng tương tác.\"\n}"
+      },
+      {
+        "output": "{\n  \"standard_code\": \"TWM.03-04\",\n  \"question\": \"C11\",\n  \"suggestion\": \"Ôn lại dạng bài tương tự với 5-7 bài tập có độ khó vừa phải; tổ chức nhóm giải đề để tăng tương tác và hiểu bài; dùng đồ chơi toán để minh họa khái niệm giúp học sinh dễ tiếp thu.\"\n}"
+      },
+      {
+        "output": "{\n  \"standard_code\": \"TWM.05-06\",\n  \"question\": \"C12\",\n  \"suggestion\": \"Duy trì phương pháp hiện tại, kết hợp thêm các bài nâng cao để phát triển tư duy cho học sinh xuất sắc.\"\n}"
+      },
+      {
+        "output": "{\n  \"standard_code\": \"TWM.07-08\",\n  \"question\": \"C13\",\n  \"suggestion\": \"Ôn tập dạng bài tập tương tự câu hỏi C13 hàng ngày; làm thêm 15 bài tập mẫu liên quan; dùng trò chơi kiểm tra nhanh để tăng hứng thú và ghi nhớ.\"\n}"
+      }
+    ],
+    "AI Agent1": [
+      {
+        "output": "{\"Đánh giá học sinh\"😕"- Duy trì luyện tập đều đặn, khoảng 15 phút/ngày để giữ vững thành tích hiện tại.\\n- Thực hiện thêm các bài tập nâng cao mức độ trung bình, khoảng 3 bài/tuần để phát triển tư duy.\\n- Tham gia kiểm tra định kỳ 2 lần/tháng nhằm theo dõi và điều chỉnh tiến độ học tập phù hợp.\"}"
+      },
+      {
+        "output": "{\"Đánh giá học sinh\"😕"- Tập trung luyện dạng bài cơ bản phù hợp trình độ 2A01 theo chuẩn cần củng cố, dành 30 phút mỗi ngày trong tuần.\\n- Thực hiện kiểm tra ngắn 2 lần/tuần nhằm đánh giá tiến độ và điều chỉnh phương pháp học kịp thời.\\n- Duy trì luyện tập đều đặn và tăng cường giải 3 bài tập mở rộng/tuần để phát triển kỹ năng tư duy và vận dụng.\"}"
+      },
+      {
+        "output": "{\"Đánh giá học sinh\"😕"- Tăng cường luyện tập dạng bài Toán cơ bản ít nhất 15 phút/ngày tập trung vào các kỹ năng nền tảng đã học.\\n- Thực hiện kiểm tra ngắn định kỳ 2 lần/tuần để đánh giá tiến bộ và củng cố điểm yếu.\\n- Ôn luyện các bài tập ở mức độ chuẩn cần củng cố khoảng 5 bài/tuần, đảm bảo nắm chắc kiến thức cơ bản.\"}"
+      },
+      {
+        "output": "{\"Đánh giá học sinh\"😕"- Duy trì luyện tập đều đặn 15 phút/ngày để củng cố kiến thức cơ bản và tăng cường sự tự tin trong môn học.\\n- Thực hiện 3 bài tập mở rộng mỗi tuần nhằm phát triển tư duy và nâng cao kỹ năng giải toán.\\n- Tham gia kiểm tra ngắn 1 lần/tuần để đánh giá tiến bộ và điều chỉnh phương pháp học phù hợp.\"}"
+      },
+      {
+        "output": "{\"Đánh giá học sinh\"😕"- Duy trì luyện tập 10 phút/ngày các bài nâng cao phù hợp để phát triển tư duy toán học.\\n- Thực hiện 3 bài tập mở rộng mỗi tuần nhằm mở rộng kiến thức và làm phong phú kỹ năng toán.\\n- Giữ nhịp luyện tập đều đặn hàng ngày, tập trung duy trì phong độ hiện tại và phát huy điểm mạnh đã có.\"}"
+      },
+      {
+        "output": "{\"Đánh giá học sinh\"😕"- Duy trì luyện tập đều đặn 15 phút/ngày với các bài mở rộng để củng cố và nâng cao kỹ năng toán.\\n- Giữ nhịp kiểm tra ngắn 1 lần/tuần để theo dõi tiến trình và điều chỉnh lộ trình học phù hợp.\\n- Tham gia 2 buổi học nhóm/tháng nhằm trao đổi và tiếp nhận thêm kiến thức nâng cao từ bạn bè và giáo viên.\"}"
+      },
+      {
+        "output": "{\"Đánh giá học sinh\"😕"- Duy trì luyện tập với 10 phút/ngày các bài tập mở rộng để phát triển thêm kỹ năng nâng cao.\\n- Giữ đều đặn nhịp ôn tập chuẩn cần củng cố khoảng 3 lần/tuần để củng cố kiến thức nền tảng.\\n- Theo dõi tiến độ qua các bài kiểm tra nhẹ 1 lần/tuần để đảm bảo kiến thức được duy trì và phát triển.\"}"
+      },
+      {
+        "output": "{\"Đánh giá học sinh\"😕"- Tập trung luyện dạng bài trong nhóm Chuẩn cần củng cố tối thiểu 4 bài/tuần để cải thiện điểm số.\\n- Thực hiện kiểm tra ngắn nội dung đã học 2 lần mỗi tuần để theo dõi tiến bộ và kịp thời điều chỉnh phương pháp học.\\n- Giữ đều nhịp học với 15 phút ôn tập từng chủ đề vào mỗi buổi tối nhằm nâng cao sự hiểu biết và ghi nhớ kiến thức.\"}"
+      },
+      {
+        "output": "{\"Đánh giá học sinh\"😕"- Duy trì luyện tập bài mở rộng với 3 bài/tuần để phát triển kỹ năng và tư duy toán học.\\n- Giữ nhịp luyện tập đều đặn 20 phút/ngày nhằm củng cố kiến thức đã học.\\n- Thực hiện kiểm tra tự đánh giá nhanh 1 lần/tuần để theo dõi tiến bộ và điều chỉnh phương pháp học phù hợp.\"}"
+      },
+      {
+        "output": "{\"Đánh giá học sinh\"😕"- Duy trì luyện tập đều các dạng bài Toán cơ bản, mỗi ngày dành ít nhất 10 phút làm bài tập nâng cao để giữ vững phong độ.\\n- Thực hiện 2 bài tập mở rộng mỗi tuần nhằm nâng cao tư duy và phát triển kỹ năng giải toán sâu hơn.\\n- Kiểm tra kiến thức định kỳ 1 lần/tuần để đảm bảo không giảm sút và kịp thời điều chỉnh lộ trình học tập.\"}"
+      }
+    ],
+    "AI Agent2": [
+      {
+        "output": "{\n  \"Gợi ý can thiệp\": \"- Luyện đọc và viết từ vựng theo chuẩn TWM.07-08, 15 phút/ngày, 5 ngày/tuần.\\n- Thực hành các bài toán liên quan đến chuẩn 3Nm.02, 20 phút, 3 buổi/tuần.\\n- Rèn kỹ năng nghe hiểu qua các bài tập chuẩn TWM.01-02, 15 phút/ngày, 4 ngày/tuần.\"\n}"
+      },
+      {
+        "output": "{\n  \"Gợi ý can thiệp\": \"- Dạy từ vựng và ngữ pháp cơ bản theo chuẩn 3Nm.02, 3Ni.06 hàng ngày, 15 phút/buổi.\\n- Thực hành luyện tập kỹ năng viết và trình bày câu theo chuẩn TWM.03-04 ít nhất 3 buổi/tuần.\\n- Ôn tập và làm bài tập vận dụng chuẩn TWM.07-08, 2 bài/tuần.\"\n}"
+      }
+    ]
+  },
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "558d88703fb65b2d0e44613bc35916258b0f0bf983c5d4730c00c424b77ca36a"
+  }
+}

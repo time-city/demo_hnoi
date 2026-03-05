@@ -5,20 +5,20 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta name="description"
-        content="AI Learning Performance Analytics – Analyze student performance with AI-powered insights and detailed reports." />
-    <title>AI Learning Performance Analytics</title>
+        content="Phân tích Hiệu suất Học tập AI – Standards-based student analysis dashboard." />
+    <title>Phân tích Hiệu suất Học tập AI</title>
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap"
         rel="stylesheet" />
     <link rel="stylesheet" href="style.css" />
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/xlsx-js-style@1.2.0/dist/xlsx.bundle.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 </head>
 
 <body>
+
     <!-- ===== HEADER ===== -->
     <header class="app-header">
         <div class="container header-inner">
@@ -34,7 +34,7 @@
         </div>
     </header>
 
-    <!-- ===== PAGE 1: UPLOAD ===== -->
+    <!-- ===== PAGE: UPLOAD ===== -->
     <main id="page-upload" class="page active">
         <div class="container upload-container">
             <div class="upload-card fade-in">
@@ -46,8 +46,8 @@
                         <line x1="12" y1="3" x2="12" y2="15" />
                     </svg>
                 </div>
-                <h1>Upload Student Data</h1>
-                <p class="upload-subtitle">Drag &amp; drop an Excel file or click to browse</p>
+                <h1>Tải Lên Dữ Liệu Học Sinh</h1>
+                <p class="upload-subtitle">Kéo & thả file Excel báo cáo, hoặc dùng dữ liệu mẫu</p>
 
                 <div class="drop-zone" id="drop-zone">
                     <input type="file" id="file-input" accept=".xlsx,.xls,.csv" hidden />
@@ -58,7 +58,6 @@
                             <polyline points="14 2 14 8 20 8" />
                             <line x1="16" y1="13" x2="8" y2="13" />
                             <line x1="16" y1="17" x2="8" y2="17" />
-                            <polyline points="10 9 9 9 8 9" />
                         </svg>
                         <p>Drop your <strong>.xlsx</strong> or <strong>.csv</strong> file here</p>
                     </div>
@@ -71,9 +70,8 @@
                         <polyline points="17 8 12 3 7 8" />
                         <line x1="12" y1="3" x2="12" y2="15" />
                     </svg>
-                    Upload File
+                    Upload Excel File
                 </button>
-
                 <button class="btn btn-ghost btn-template" id="btn-template">
                     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
                         stroke-linecap="round" stroke-linejoin="round">
@@ -83,13 +81,11 @@
                     </svg>
                     Download Sample Template (.xlsx)
                 </button>
-
                 <div class="file-info" id="file-info"></div>
 
-                <!-- Processing overlay -->
                 <div class="processing-overlay" id="processing-overlay">
                     <div class="spinner"></div>
-                    <p>Processing your data…</p>
+                    <p>Analyzing student standards…</p>
                     <div class="progress-bar">
                         <div class="progress-fill" id="progress-fill"></div>
                     </div>
@@ -98,227 +94,193 @@
         </div>
     </main>
 
-    <!-- ===== PAGE 2: DASHBOARD ===== -->
+    <!-- ===== PAGE: DASHBOARD ===== -->
     <section id="page-dashboard" class="page">
-        <div class="container dashboard-container">
-            <div class="page-title fade-in">
-                <h1>Dashboard Overview</h1>
-                <p>Performance summary for all students</p>
-            </div>
-
-            <!-- Summary Cards -->
-            <div class="summary-cards fade-in">
-                <div class="summary-card" id="card-total">
-                    <div class="card-icon blue">
-                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                            stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                            <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
-                            <circle cx="9" cy="7" r="4" />
-                            <path d="M23 21v-2a4 4 0 0 0-3-3.87" />
-                            <path d="M16 3.13a4 4 0 0 1 0 7.75" />
-                        </svg>
-                    </div>
-                    <div class="card-data">
-                        <span class="card-value" id="val-total">0</span>
-                        <span class="card-label">Total Students</span>
-                    </div>
-                </div>
-                <div class="summary-card" id="card-avg">
-                    <div class="card-icon green">
-                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                            stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                            <line x1="18" y1="20" x2="18" y2="10" />
-                            <line x1="12" y1="20" x2="12" y2="4" />
-                            <line x1="6" y1="20" x2="6" y2="14" />
-                        </svg>
-                    </div>
-                    <div class="card-data">
-                        <span class="card-value" id="val-avg">0</span>
-                        <span class="card-label">Class Average</span>
-                    </div>
-                </div>
-                <div class="summary-card" id="card-high">
-                    <div class="card-icon purple">
-                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                            stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                            <polygon
-                                points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
-                        </svg>
-                    </div>
-                    <div class="card-data">
-                        <span class="card-value" id="val-high">0</span>
-                        <span class="card-label">Highest Score</span>
-                    </div>
-                </div>
-                <div class="summary-card" id="card-below">
-                    <div class="card-icon red">
-                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                            stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                            <circle cx="12" cy="12" r="10" />
-                            <line x1="12" y1="8" x2="12" y2="12" />
-                            <line x1="12" y1="16" x2="12.01" y2="16" />
-                        </svg>
-                    </div>
-                    <div class="card-data">
-                        <span class="card-value" id="val-below">0</span>
-                        <span class="card-label">Below Average</span>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Charts -->
-            <div class="charts-row fade-in">
-                <div class="chart-card">
-                    <h3>Correct Rate per Question</h3>
-                    <canvas id="chart-questions"></canvas>
-                </div>
-                <div class="chart-card">
-                    <h3>Score Distribution</h3>
-                    <canvas id="chart-distribution"></canvas>
-                </div>
-            </div>
-
-            <!-- Question Analysis Table -->
-            <div class="table-card fade-in">
-                <h3>📊 Question Analysis</h3>
-                <div class="table-wrap">
-                    <table id="question-analysis-table">
-                        <thead>
-                            <tr>
-                                <th>Question</th>
-                                <th>Total Correct</th>
-                                <th>Total Wrong</th>
-                                <th>Class Correct %</th>
-                                <th>Difficulty</th>
-                            </tr>
-                        </thead>
-                        <tbody id="question-analysis-tbody"></tbody>
-                    </table>
-                </div>
-            </div>
-
-            <!-- Student Table -->
-            <div class="table-card fade-in">
-                <h3>Student Performance Table</h3>
-                <div class="table-wrap">
-                    <table id="student-table">
-                        <thead>
-                            <tr>
-                                <th>#</th>
-                                <th>Name</th>
-                                <th>Total Score</th>
-                                <th>Rank</th>
-                                <th>Risk Level</th>
-                                <th>Action</th>
-                            </tr>
-                        </thead>
-                        <tbody id="student-tbody"></tbody>
-                    </table>
-                </div>
-            </div>
-        </div>
-    </section>
-
-    <!-- ===== PAGE 3: STUDENT DETAIL ===== -->
-    <section id="page-detail" class="page">
-        <div class="container detail-container">
-            <button class="btn btn-ghost" id="btn-back">
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-                    stroke-linecap="round" stroke-linejoin="round">
-                    <line x1="19" y1="12" x2="5" y2="12" />
-                    <polyline points="12 19 5 12 12 5" />
-                </svg>
-                Back to Dashboard
-            </button>
-
-            <!-- Student Overview -->
-            <div class="detail-overview fade-in">
-                <div class="student-avatar" id="student-avatar">A</div>
-                <div class="student-meta">
-                    <h2 id="detail-name">—</h2>
-                    <div class="meta-pills">
-                        <span class="pill pill-score">Score: <strong id="detail-score">0</strong>/5</span>
-                        <span class="pill pill-rank">Rank: <strong id="detail-rank">0</strong></span>
-                        <span class="pill" id="detail-diff-pill">Diff: <strong id="detail-diff">0</strong></span>
-                        <span class="pill" id="detail-trend-pill"><strong id="detail-trend">—</strong></span>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Question Analysis -->
-            <div class="detail-section fade-in">
-                <h3>📊 Question Analysis</h3>
-                <div class="table-wrap">
-                    <table id="question-table">
-                        <thead>
-                            <tr>
-                                <th>Question</th>
-                                <th>Student Score</th>
-                                <th>Class Correct %</th>
-                                <th>Comment</th>
-                            </tr>
-                        </thead>
-                        <tbody id="question-tbody"></tbody>
-                    </table>
-                </div>
-            </div>
-
-            <!-- AI Evaluation -->
-            <div class="detail-section fade-in">
-                <h3>🤖 AI Evaluation</h3>
-                <div class="ai-box" id="ai-evaluation"></div>
-            </div>
-
-            <!-- Improvement Roadmap -->
-            <div class="detail-section fade-in">
-                <h3>🗺️ Improvement Roadmap</h3>
-                <div class="timeline">
-                    <div class="timeline-item">
-                        <div class="timeline-marker"></div>
-                        <div class="timeline-content">
-                            <h4>Week 1 – Foundation Review</h4>
-                            <p>Revisit core concepts in areas where the student scored below the class average. Focus on
-                                building a strong conceptual foundation.</p>
-                        </div>
-                    </div>
-                    <div class="timeline-item">
-                        <div class="timeline-marker"></div>
-                        <div class="timeline-content">
-                            <h4>Week 2 – Accuracy Training</h4>
-                            <p>Targeted exercises on frequently-missed question types. Emphasis on careful reading and
-                                methodical problem-solving.</p>
-                        </div>
-                    </div>
-                    <div class="timeline-item">
-                        <div class="timeline-marker"></div>
-                        <div class="timeline-content">
-                            <h4>Week 3 – Practice Tests</h4>
-                            <p>Simulate real exam conditions with timed practice tests. Identify remaining weak spots
-                                and refine strategies.</p>
-                        </div>
-                    </div>
-                    <div class="timeline-item">
-                        <div class="timeline-marker"></div>
-                        <div class="timeline-content">
-                            <h4>Week 4 – Reassessment</h4>
-                            <p>Final evaluation to measure improvement. Compare results with initial performance and
-                                adjust the learning path accordingly.</p>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Download Button -->
-            <div class="detail-actions fade-in">
-                <button class="btn btn-primary" id="btn-download">
+        <div class="dashboard-layout">
+            <!-- Sidebar -->
+            <aside class="sidebar" id="sidebar">
+                <button class="sidebar-btn btn-back" id="btn-back-upload">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                        stroke-linecap="round" stroke-linejoin="round">
+                        <polyline points="15 18 9 12 15 6" />
+                    </svg>
+                    Tải File Mới
+                </button>
+                <div class="sidebar-divider"></div>
+                <div class="sidebar-title">Dashboard</div>
+                <button class="sidebar-btn active" data-tab="tab-standards">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                        stroke-linecap="round" stroke-linejoin="round">
+                        <line x1="18" y1="20" x2="18" y2="10" />
+                        <line x1="12" y1="20" x2="12" y2="4" />
+                        <line x1="6" y1="20" x2="6" y2="14" />
+                    </svg>
+                     Phân tích chuẩn
+                </button>
+                <button class="sidebar-btn" data-tab="tab-students">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                        stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
+                        <circle cx="9" cy="7" r="4" />
+                        <path d="M23 21v-2a4 4 0 0 0-3-3.87" />
+                        <path d="M16 3.13a4 4 0 0 1 0 7.75" />
+                    </svg>
+                    Phân Tích Học Sinh
+                </button>
+                <button class="sidebar-btn" data-tab="tab-weak">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                        stroke-linecap="round" stroke-linejoin="round">
+                        <circle cx="12" cy="12" r="10" />
+                        <line x1="12" y1="8" x2="12" y2="12" />
+                        <line x1="12" y1="16" x2="12.01" y2="16" />
+                    </svg>
+                    Học Sinh Yếu
+                </button>
+                <button class="sidebar-btn" data-tab="tab-class">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                        stroke-linecap="round" stroke-linejoin="round">
+                        <rect x="3" y="3" width="7" height="7" rx="1"/>
+                        <rect x="14" y="3" width="7" height="7" rx="1"/>
+                        <rect x="3" y="14" width="7" height="7" rx="1"/>
+                        <rect x="14" y="14" width="7" height="7" rx="1"/>
+                    </svg>
+                    Phân Tích Lớp
+                </button>
+                <div class="sidebar-divider"></div>
+                <div class="sidebar-title">Export</div>
+                <button class="sidebar-btn btn-export" id="btn-export-excel">
                     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
                         stroke-linecap="round" stroke-linejoin="round">
                         <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
                         <polyline points="7 10 12 15 17 10" />
                         <line x1="12" y1="15" x2="12" y2="3" />
                     </svg>
-                    Download Student Report (PDF)
+                    Tải Excel (4 Sheet)
                 </button>
+                <button class="sidebar-btn btn-export" id="btn-export-all-pdf">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                        stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+                        <polyline points="14 2 14 8 20 8" />
+                        <line x1="16" y1="13" x2="8" y2="13" />
+                        <line x1="16" y1="17" x2="8" y2="17" />
+                    </svg>
+                    Tải Tất Cả PDF
+                </button>
+            </aside>
+
+            <!-- Main Content Area -->
+            <div class="dashboard-main">
+                <!-- TAB 1: Phân Tích Chuẩn -->
+                <div class="tab-panel active" id="tab-standards">
+                    <div class="page-title fade-in">
+                        <h1>📊 Phân Tích Chuẩn (C1–C13)</h1>
+                        <p>Phân tích kết quả theo từng chuẩn học</p>
+                    </div>
+                    <div class="summary-cards fade-in" id="std-summary-cards"></div>
+                    <div class="charts-row fade-in">
+                        <div class="chart-card">
+                            <h3>Tỉ Lệ Không Đạt Theo Chuẩn</h3><canvas id="chart-fail-rate"></canvas>
+                        </div>
+                        <div class="chart-card">
+                            <h3>Phân Bố Điểm Số Tổng Thể</h3><canvas id="chart-score-dist"></canvas>
+                        </div>
+                    </div>
+                    <div class="table-card fade-in">
+                        <h3>Bảng Kết Quả Theo Chuẩn</h3>
+                        <div class="table-wrap">
+                            <table id="standards-table">
+                                <thead>
+                                    <tr>
+                                        <th>Chuẩn</th>
+                                        <th>% Không Đạt (0–1)</th>
+                                        <th>% Đạt (2–3)</th>
+                                        <th>% Xuất Sắc (4)</th>
+                                        <th>Cần Cải Thiện</th>
+                                        <th>Gợi Ý</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="standards-tbody"></tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- TAB 2: Phân Tích Học Sinh -->
+                <div class="tab-panel" id="tab-students">
+                    <div class="page-title fade-in">
+                        <h1>🎓 Phân Tích Học Sinh
+                        </h1>
+                        <p>Kết quả chi tiết từng học sinh theo từng chuẩn</p>
+                    </div>
+                    <div class="summary-cards fade-in" id="stu-summary-cards"></div>
+                    <div class="table-card fade-in">
+                        <div class="table-toolbar">
+                            <h3>Bảng Kết Quả Học Sinh</h3>
+                            <input type="text" id="student-search" class="search-input"
+                                placeholder="Tìm theo tên hoặc mã HS…" />
+                        </div>
+                        <div class="table-wrap">
+                            <table id="students-table">
+                                <thead>
+                                    <tr>
+                                        <th class="sortable" data-col="id">Mã HS ↕</th>
+                                        <th class="sortable" data-col="name">Họ Tên ↕</th>
+                                        <th class="sortable" data-col="total">Tổng /52 ↕</th>
+                                        <th class="sortable" data-col="score10">Điểm /10 ↕</th>
+                                        <th>Xuất Sắc</th>
+                                        <th>Đạt</th>
+                                        <th>Không Đạt</th>
+                                        <th>Chuẩn Mạnh</th>
+                                        <th>Chuẩn Yếu</th>
+                                        <th>Cần Cải Thiện</th>
+                                        <th class="sortable" data-col="risk">Nguy Cơ ↕</th>
+                                        <th>Đánh Giá</th>
+                                        <th>Thao Tác</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="students-tbody"></tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- TAB 3: Học Sinh Yếu -->
+                <div class="tab-panel" id="tab-weak">
+                    <div class="page-title fade-in">
+                        <h1>⚠️ Báo Cáo Học Sinh Yếu</h1>
+                        <p>Học sinh có kết quả thấp hoặc không đạt nhiều chuẩn</p>
+                    </div>
+                    <div class="summary-cards fade-in" id="weak-summary-cards"></div>
+                    <div class="table-card fade-in">
+                        <h3>Học Sinh Cần Can Thiệp</h3>
+                        <div class="table-wrap">
+                            <table id="weak-table">
+                                <thead>
+                                    <tr>
+                                        <th>Mã HS</th>
+                                        <th>Họ và Tên</th>
+                                        <th>Tổng /52</th>
+                                        <th>Điểm /10</th>
+                                        <th>Chuẩn Không Đạt</th>
+                                        <th>Chuẩn Yếu</th>
+                                        <th>Mức Nguy Cơ</th>
+                                        <th>Gợi Ý Can Thiệp</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="weak-tbody"></tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+                <!-- TAB 4: Phân Tích Lớp -->
+                <div class="tab-panel" id="tab-class">
+                    <div class="page-title fade-in">
+                        <h1>🏫 Phân Tích Lớp Học</h1>
+                        <p>Tổng hợp kết quả, phân bổ điểm, câu yếu và kế hoạch hành động theo từng lớp</p>
+                    </div>
+                    <!-- Summary cards + nội dung lớp được inject bởi renderSheet4Tab() -->
+                </div>
             </div>
         </div>
     </section>
