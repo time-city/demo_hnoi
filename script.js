@@ -38,100 +38,252 @@ const rawStudents = [
   { id: "S010", name: "Ngo Thi K", class: "10A2", scores: [4, 3, 4, 3, 4, 4, 3, 4, 4, 3, 4, 3, 4] },
 ];
 
-// ─── MOCK SHEET 4 DATA (cấu trúc object đơn, khớp API thực tế) ───────────
-const mockSheet4Data = [{
-  Sheets: 4,
-  class_analysis: {
-    class_name: "10A1-Mock",
-    total_students: 30,
-    avg_score: 6.2,
-    max_score: 9.5,
-    min_score: 2.0,
-    below_avg_count: 8,
-    below_avg_percent: 27,
-    top5: [
-      { id: "HS001", name: "Nguyễn Văn A", total_score: 9.5 },
-      { id: "HS002", name: "Trần Thị B",   total_score: 9.0 },
-      { id: "HS003", name: "Lê Văn C",     total_score: 8.8 },
-      { id: "HS004", name: "Phạm Thị D",   total_score: 8.5 },
-      { id: "HS005", name: "Hoàng Văn E",  total_score: 8.2 }
-    ],
-    bottom5: [
-      { id: "HS030", name: "Vũ Thị K",     total_score: 2.0 },
-      { id: "HS029", name: "Đặng Văn L",   total_score: 2.5 },
-      { id: "HS028", name: "Bùi Thị M",    total_score: 3.0 },
-      { id: "HS027", name: "Trịnh Văn N",  total_score: 3.2 },
-      { id: "HS026", name: "Lý Thị O",     total_score: 3.5 }
-    ],
-    hardest_question: { question: "q11", avg_score: 1.867 },
-    easiest_question: { question: "q7",  avg_score: 3.933 },
-    question_stats: [
-      { question: "q11", avg_score: 1.867 },
-      { question: "q13", avg_score: 2.067 },
-      { question: "q8",  avg_score: 2.333 },
-      { question: "q10", avg_score: 2.4   },
-      { question: "q5",  avg_score: 2.6   },
-      { question: "q3",  avg_score: 2.733 },
-      { question: "q7",  avg_score: 3.933 }
-    ]
+// ─── MOCK SHEET 4 DATA (mảng nhiều lớp, khớp API thực tế) ───────────
+const mockSheet4Data = [
+  // ── Lớp 1: 10A1 ──────────────────────────────────────────
+  {
+    Sheets: 4,
+    class_analysis: {
+      class_name: "10A1-Mock",
+      total_students: 30,
+      avg_score: 6.2,
+      max_score: 9.5,
+      min_score: 2.0,
+      below_avg_count: 8,
+      below_avg_percent: 27,
+      top5: [
+        { id: "HS001", name: "Nguyễn Văn A", total_score: 9.5 },
+        { id: "HS002", name: "Trần Thị B",   total_score: 9.0 },
+        { id: "HS003", name: "Lê Văn C",     total_score: 8.8 },
+        { id: "HS004", name: "Phạm Thị D",   total_score: 8.5 },
+        { id: "HS005", name: "Hoàng Văn E",  total_score: 8.2 }
+      ],
+      bottom5: [
+        { id: "HS030", name: "Vũ Thị K",    total_score: 2.0 },
+        { id: "HS029", name: "Đặng Văn L",  total_score: 2.5 },
+        { id: "HS028", name: "Bùi Thị M",   total_score: 3.0 },
+        { id: "HS027", name: "Trịnh Văn N", total_score: 3.2 },
+        { id: "HS026", name: "Lý Thị O",    total_score: 3.5 }
+      ],
+      hardest_question: { question: "q11", avg_score: 1.867 },
+      easiest_question: { question: "q7",  avg_score: 3.933 },
+      question_stats: [
+        { question: "q11", avg_score: 1.867 },
+        { question: "q13", avg_score: 2.067 },
+        { question: "q8",  avg_score: 2.333 },
+        { question: "q10", avg_score: 2.4   },
+        { question: "q5",  avg_score: 2.6   },
+        { question: "q3",  avg_score: 2.733 },
+        { question: "q7",  avg_score: 3.933 }
+      ]
+    },
+    class_histogram: {
+      class_name: "10A1-Mock",
+      ranges: ["0-2","2-4","4-6","6-8","8-10"],
+      counts: [3, 5, 10, 8, 4],
+      total_students: 30
+    },
+    class_commentary: {
+      class_name: "10A1-Mock",
+      level: "Trung bình",
+      summary: "Lớp 10A1 ở mức TRUNG BÌNH, một số học sinh cần hỗ trợ thêm ở các câu khó.",
+      insights: [
+        "Điểm trung bình lớp: 6.2/10.",
+        "Tỉ lệ học sinh dưới trung bình: 27% (8/30).",
+        "Câu khó nhất: q11 (ĐTB: 1.867).",
+        "Câu dễ nhất: q7 (ĐTB: 3.933)."
+      ],
+      focus_questions: [
+        { question: "q11", avg_score: 1.867 },
+        { question: "q13", avg_score: 2.067 },
+        { question: "q8",  avg_score: 2.333 }
+      ],
+      actions: [
+        "Ôn lại nền tảng theo chuyên đề; học sinh dưới TB làm bài theo mức độ dễ → trung bình trước.",
+        "Kèm nhóm bottom 5 theo checklist lỗi sai; kiểm tra ngắn 10–15 phút mỗi buổi.",
+        "Ưu tiên chữa và luyện tập trọng tâm các câu: q11, q13, q8."
+      ]
+    },
+    sheet_class_report: {
+      class_name: "10A1-Mock",
+      summary: { level: "Trung bình", avg_score: 6.2, max_score: 9.5, min_score: 2.0, below_avg_percent: 27, total_students: 30 },
+      insights: ["Điểm trung bình lớp: 6.2/10.", "Tỉ lệ học sinh dưới trung bình: 27% (8/30)."],
+      histogram: { ranges: ["0-2","2-4","4-6","6-8","8-10"], counts: [3,5,10,8,4] },
+      top_students:    [{ id: "HS001", name: "Nguyễn Văn A", total_score: 9.5 }, { id: "HS002", name: "Trần Thị B", total_score: 9.0 }],
+      bottom_students: [{ id: "HS030", name: "Vũ Thị K",    total_score: 2.0 }, { id: "HS029", name: "Đặng Văn L", total_score: 2.5 }],
+      hardest_question: { question: "q11", avg_score: 1.867 },
+      easiest_question: { question: "q7",  avg_score: 3.933 },
+      focus_questions: [{ question: "q11", avg_score: 1.867 }, { question: "q13", avg_score: 2.067 }, { question: "q8", avg_score: 2.333 }],
+      action_plan: [
+        "Ôn lại nền tảng theo chuyên đề; học sinh dưới TB làm bài theo mức độ dễ → trung bình trước.",
+        "Kèm nhóm bottom 5 theo checklist lỗi sai; kiểm tra ngắn 10–15 phút mỗi buổi.",
+        "Ưu tiên chữa và luyện tập trọng tâm các câu: q11, q13, q8."
+      ]
+    }
   },
-  class_histogram: {
-    class_name: "10A1-Mock",
-    ranges: ["0-2", "2-4", "4-6", "6-8", "8-10"],
-    counts: [3, 5, 10, 8, 4],
-    total_students: 30
+  // ── Lớp 2: 10A2 ──────────────────────────────────────────
+  {
+    Sheets: 4,
+    class_analysis: {
+      class_name: "10A2-Mock",
+      total_students: 28,
+      avg_score: 7.8,
+      max_score: 10.0,
+      min_score: 4.5,
+      below_avg_count: 4,
+      below_avg_percent: 14,
+      top5: [
+        { id: "HS101", name: "Đinh Thị Lan",   total_score: 10.0 },
+        { id: "HS102", name: "Ngô Văn Hùng",   total_score: 9.8  },
+        { id: "HS103", name: "Phan Thị Mai",    total_score: 9.5  },
+        { id: "HS104", name: "Trương Văn Đức",  total_score: 9.2  },
+        { id: "HS105", name: "Lưu Thị Hoa",    total_score: 9.0  }
+      ],
+      bottom5: [
+        { id: "HS128", name: "Cao Văn Bình",  total_score: 4.5 },
+        { id: "HS127", name: "Mai Thị Cúc",   total_score: 5.0 },
+        { id: "HS126", name: "Tô Văn Dũng",   total_score: 5.5 },
+        { id: "HS125", name: "Kiều Thị Em",   total_score: 5.8 },
+        { id: "HS124", name: "Lê Văn Phúc",   total_score: 6.0 }
+      ],
+      hardest_question: { question: "q9",  avg_score: 2.5  },
+      easiest_question: { question: "q1",  avg_score: 4.2  },
+      question_stats: [
+        { question: "q9",  avg_score: 2.5  },
+        { question: "q12", avg_score: 2.8  },
+        { question: "q6",  avg_score: 3.1  },
+        { question: "q4",  avg_score: 3.4  },
+        { question: "q2",  avg_score: 3.7  },
+        { question: "q1",  avg_score: 4.2  }
+      ]
+    },
+    class_histogram: {
+      class_name: "10A2-Mock",
+      ranges: ["0-2","2-4","4-6","6-8","8-10"],
+      counts: [0, 1, 3, 12, 12],
+      total_students: 28
+    },
+    class_commentary: {
+      class_name: "10A2-Mock",
+      level: "Khá",
+      summary: "Lớp 10A2 đạt mức KHÁ, đa số học sinh nắm vững kiến thức cơ bản.",
+      insights: [
+        "Điểm trung bình lớp: 7.8/10.",
+        "Tỉ lệ học sinh dưới trung bình: 14% (4/28).",
+        "Câu khó nhất: q9 (ĐTB: 2.5).",
+        "Câu dễ nhất: q1 (ĐTB: 4.2)."
+      ],
+      focus_questions: [
+        { question: "q9",  avg_score: 2.5 },
+        { question: "q12", avg_score: 2.8 },
+        { question: "q6",  avg_score: 3.1 }
+      ],
+      actions: [
+        "Tiếp tục duy trì chất lượng; tổ chức học nhóm để học sinh khá hỗ trợ học sinh yếu.",
+        "Tập trung ôn luyện câu q9 và q12 theo hướng thực hành nhiều hơn.",
+        "Khuyến khích học sinh top đạt mức Xuất sắc trong kỳ tới."
+      ]
+    },
+    sheet_class_report: {
+      class_name: "10A2-Mock",
+      summary: { level: "Khá", avg_score: 7.8, max_score: 10.0, min_score: 4.5, below_avg_percent: 14, total_students: 28 },
+      insights: ["Điểm trung bình lớp: 7.8/10.", "Tỉ lệ học sinh dưới trung bình: 14% (4/28)."],
+      histogram: { ranges: ["0-2","2-4","4-6","6-8","8-10"], counts: [0,1,3,12,12] },
+      top_students:    [{ id: "HS101", name: "Đinh Thị Lan",  total_score: 10.0 }, { id: "HS102", name: "Ngô Văn Hùng", total_score: 9.8 }],
+      bottom_students: [{ id: "HS128", name: "Cao Văn Bình", total_score: 4.5  }, { id: "HS127", name: "Mai Thị Cúc",  total_score: 5.0 }],
+      hardest_question: { question: "q9", avg_score: 2.5 },
+      easiest_question: { question: "q1", avg_score: 4.2 },
+      focus_questions: [{ question: "q9", avg_score: 2.5 }, { question: "q12", avg_score: 2.8 }, { question: "q6", avg_score: 3.1 }],
+      action_plan: [
+        "Tiếp tục duy trì chất lượng; tổ chức học nhóm để học sinh khá hỗ trợ học sinh yếu.",
+        "Tập trung ôn luyện câu q9 và q12 theo hướng thực hành nhiều hơn.",
+        "Khuyến khích học sinh top đạt mức Xuất sắc trong kỳ tới."
+      ]
+    }
   },
-  class_commentary: {
-    class_name: "10A1-Mock",
-    level: "Trung bình",
-    summary: "Lớp ở mức TRUNG BÌNH, một số học sinh cần được hỗ trợ thêm ở các câu khó.",
-    insights: [
-      "Điểm trung bình lớp: 6.2/10.",
-      "Tỉ lệ học sinh dưới trung bình: 27% (8/30).",
-      "Câu/ý khó nhất: q11 (điểm TB: 1.867).",
-      "Câu/ý dễ nhất: q7 (điểm TB: 3.933)."
-    ],
-    focus_questions: [
-      { question: "q11", avg_score: 1.867 },
-      { question: "q13", avg_score: 2.067 },
-      { question: "q8",  avg_score: 2.333 }
-    ],
-    actions: [
-      "Ôn lại nền tảng theo chuyên đề; học sinh dưới TB làm bài theo mức độ dễ → trung bình trước.",
-      "Kèm nhóm bottom 5 theo checklist lỗi sai; kiểm tra ngắn 10–15 phút mỗi buổi.",
-      "Ưu tiên chữa và luyện tập trọng tâm các câu: q11, q13, q8."
-    ]
-  },
-  sheet_class_report: {
-    class_name: "10A1-Mock",
-    summary: { level: "Trung bình", avg_score: 6.2, max_score: 9.5, min_score: 2.0, below_avg_percent: 27, total_students: 30 },
-    insights: [
-      "Điểm trung bình lớp: 6.2/10.",
-      "Tỉ lệ học sinh dưới trung bình: 27% (8/30)."
-    ],
-    histogram: { ranges: ["0-2","2-4","4-6","6-8","8-10"], counts: [3,5,10,8,4] },
-    top_students: [
-      { id: "HS001", name: "Nguyễn Văn A", total_score: 9.5 },
-      { id: "HS002", name: "Trần Thị B",   total_score: 9.0 }
-    ],
-    bottom_students: [
-      { id: "HS030", name: "Vũ Thị K",   total_score: 2.0 },
-      { id: "HS029", name: "Đặng Văn L", total_score: 2.5 }
-    ],
-    hardest_question: { question: "q11", avg_score: 1.867 },
-    easiest_question: { question: "q7",  avg_score: 3.933 },
-    focus_questions: [
-      { question: "q11", avg_score: 1.867 },
-      { question: "q13", avg_score: 2.067 },
-      { question: "q8",  avg_score: 2.333 }
-    ],
-    action_plan: [
-      "Ôn lại nền tảng theo chuyên đề; học sinh dưới TB làm bài theo mức độ dễ → trung bình trước.",
-      "Kèm nhóm bottom 5 theo checklist lỗi sai; kiểm tra ngắn 10–15 phút mỗi buổi.",
-      "Ưu tiên chữa và luyện tập trọng tâm các câu: q11, q13, q8."
-    ]
+  // ── Lớp 3: 10A3 ──────────────────────────────────────────
+  {
+    Sheets: 4,
+    class_analysis: {
+      class_name: "10A3-Mock",
+      total_students: 32,
+      avg_score: 4.1,
+      max_score: 7.5,
+      min_score: 0.5,
+      below_avg_count: 18,
+      below_avg_percent: 56,
+      top5: [
+        { id: "HS201", name: "Vương Thị Thu",   total_score: 7.5 },
+        { id: "HS202", name: "Hà Văn Sơn",      total_score: 7.2 },
+        { id: "HS203", name: "Đỗ Thị Ngọc",     total_score: 7.0 },
+        { id: "HS204", name: "Chu Văn Tài",      total_score: 6.8 },
+        { id: "HS205", name: "Lương Thị Uyên",  total_score: 6.5 }
+      ],
+      bottom5: [
+        { id: "HS232", name: "Quách Văn Xây",  total_score: 0.5 },
+        { id: "HS231", name: "Tiêu Thị Yên",   total_score: 1.0 },
+        { id: "HS230", name: "Mạc Văn Zân",    total_score: 1.5 },
+        { id: "HS229", name: "Âu Thị Ân",      total_score: 2.0 },
+        { id: "HS228", name: "Biên Văn Bảo",   total_score: 2.3 }
+      ],
+      hardest_question: { question: "q13", avg_score: 0.8  },
+      easiest_question: { question: "q2",  avg_score: 2.9  },
+      question_stats: [
+        { question: "q13", avg_score: 0.8  },
+        { question: "q11", avg_score: 1.0  },
+        { question: "q10", avg_score: 1.2  },
+        { question: "q7",  avg_score: 1.5  },
+        { question: "q4",  avg_score: 1.9  },
+        { question: "q2",  avg_score: 2.9  }
+      ]
+    },
+    class_histogram: {
+      class_name: "10A3-Mock",
+      ranges: ["0-2","2-4","4-6","6-8","8-10"],
+      counts: [8, 10, 9, 5, 0],
+      total_students: 32
+    },
+    class_commentary: {
+      class_name: "10A3-Mock",
+      level: "Yếu",
+      summary: "Lớp 10A3 ở mức YẾU, hơn nửa học sinh dưới trung bình, cần can thiệp khẩn cấp.",
+      insights: [
+        "Điểm trung bình lớp: 4.1/10.",
+        "Tỉ lệ học sinh dưới trung bình: 56% (18/32).",
+        "Câu khó nhất: q13 (ĐTB: 0.8).",
+        "Câu dễ nhất: q2 (ĐTB: 2.9)."
+      ],
+      focus_questions: [
+        { question: "q13", avg_score: 0.8 },
+        { question: "q11", avg_score: 1.0 },
+        { question: "q10", avg_score: 1.2 }
+      ],
+      actions: [
+        "Xây dựng kế hoạch phụ đạo khẩn cấp cho 18 học sinh dưới TB; ưu tiên củng cố kiến thức nền.",
+        "Chia nhóm học tập: nhóm giỏi kèm nhóm yếu theo từng chủ đề cụ thể.",
+        "Tăng tần suất kiểm tra mini (10 phút) để theo dõi tiến độ từng tuần.",
+        "Liên hệ phụ huynh học sinh bottom 5 để phối hợp hỗ trợ tại nhà."
+      ]
+    },
+    sheet_class_report: {
+      class_name: "10A3-Mock",
+      summary: { level: "Yếu", avg_score: 4.1, max_score: 7.5, min_score: 0.5, below_avg_percent: 56, total_students: 32 },
+      insights: ["Điểm trung bình lớp: 4.1/10.", "Tỉ lệ học sinh dưới trung bình: 56% (18/32)."],
+      histogram: { ranges: ["0-2","2-4","4-6","6-8","8-10"], counts: [8,10,9,5,0] },
+      top_students:    [{ id: "HS201", name: "Vương Thị Thu", total_score: 7.5 }, { id: "HS202", name: "Hà Văn Sơn", total_score: 7.2 }],
+      bottom_students: [{ id: "HS232", name: "Quách Văn Xây", total_score: 0.5 }, { id: "HS231", name: "Tiêu Thị Yên", total_score: 1.0 }],
+      hardest_question: { question: "q13", avg_score: 0.8 },
+      easiest_question: { question: "q2",  avg_score: 2.9 },
+      focus_questions: [{ question: "q13", avg_score: 0.8 }, { question: "q11", avg_score: 1.0 }, { question: "q10", avg_score: 1.2 }],
+      action_plan: [
+        "Xây dựng kế hoạch phụ đạo khẩn cấp cho 18 học sinh dưới TB; ưu tiên củng cố kiến thức nền.",
+        "Chia nhóm học tập: nhóm giỏi kèm nhóm yếu theo từng chủ đề cụ thể.",
+        "Tăng tần suất kiểm tra mini (10 phút) để theo dõi tiến độ từng tuần.",
+        "Liên hệ phụ huynh học sinh bottom 5 để phối hợp hỗ trợ tại nhà."
+      ]
+    }
   }
-}];
+];
 
 // ─── API RESPONSE DATA (from webhook) ──────────────────────
 let apiSheet1Data = [];
@@ -283,10 +435,10 @@ function processAPIResponse(responseArray) {
     else if (sheetNum == 2) apiSheet2Data = Array.isArray(data) ? data : [];
     else if (sheetNum == 3) apiSheet3Data = Array.isArray(data) ? data : [];
     else if (sheetNum == 4) {
-      // Sheet 4 không dùng key "data" mà có các key riêng:
-      // class_analysis, class_histogram, class_commentary, sheet_class_report
-      apiSheet4Data = [item]; // lưu nguyên item, render sẽ đọc đúng keys
-      console.log("✅ Sheet 4 nhận được:", item);
+      // Sheet 4: item.data là mảng các lớp — push từng lớp
+      const classes = Array.isArray(item.data) ? item.data : [item];
+      classes.forEach(cls => apiSheet4Data.push(cls));
+      console.log("✅ Sheet 4 – số lớp thêm vào:", classes.length);
     }
   });
 
@@ -1091,6 +1243,25 @@ function renderWeakTab() {
 //                        bottom_students[], hardest_question, easiest_question,
 //                        focus_questions[], action_plan[] }
 // }
+
+// ── Global helpers cho Sheet4 ─────────────────────────────
+function scoreColor(v) {
+  const n = parseFloat(v) || 0;
+  const pct = (n / 10) * 100;
+  if (pct < 40) return { color: "#C0392B", bg: "#FADBD8" };
+  if (pct < 65) return { color: "#7E5109", bg: "#FEF9E7" };
+  return { color: "#1D6A39", bg: "#D5F5E3" };
+}
+function levelBadge(lv) {
+  const map = {
+    "Xuất sắc": {color:"#1D6A39",bg:"#D5F5E3"}, "Tốt": {color:"#1D6A39",bg:"#D5F5E3"},
+    "Khá":      {color:"#7E5109",bg:"#FEF9E7"}, "Trung bình": {color:"#7E5109",bg:"#FEF9E7"},
+    "Yếu":      {color:"#C0392B",bg:"#FADBD8"}, "Kém": {color:"#C0392B",bg:"#FADBD8"},
+  };
+  const c = map[lv] || {color:"#555",bg:"#eee"};
+  return `<span style="padding:3px 14px;border-radius:12px;font-weight:700;font-size:13px;color:${c.color};background:${c.bg};">${lv||"—"}</span>`;
+}
+
 function renderSheet4Tab() {
   const container = document.getElementById("tab-class");
   if (!container) return;
@@ -1107,92 +1278,192 @@ function renderSheet4Tab() {
     return;
   }
 
-  // apiSheet4Data[0] là item gốc
-  const s4 = apiSheet4Data[0];
-
-  // Đọc đúng cấu trúc thực tế – các key là OBJECT ĐƠN (không phải array)
-  const ca  = s4["class_analysis"]    || {};  // object: class_name, total_students, avg_score, ...
-  const ch  = s4["class_histogram"]   || {};  // object: ranges[], counts[]
-  const cc  = s4["class_commentary"]  || {};  // object: level, summary, insights[], actions[]
-  const rep = s4["sheet_class_report"]|| {};  // object: summary{}, top_students[], bottom_students[], ...
-
-  // ── Helpers ───────────────────────────────────────────────
-  function scoreColor(v) {
-    const n = parseFloat(v) || 0;
-    const pct = (n / 10) * 100;
-    if (pct < 40) return { color: "#C0392B", bg: "#FADBD8" };
-    if (pct < 65) return { color: "#7E5109", bg: "#FEF9E7" };
-    return { color: "#1D6A39", bg: "#D5F5E3" };
-  }
-  function levelBadge(level) {
-    const map = {
-      "Xuất sắc": {color:"#1D6A39",bg:"#D5F5E3"}, "Tốt": {color:"#1D6A39",bg:"#D5F5E3"},
-      "Khá": {color:"#7E5109",bg:"#FEF9E7"}, "Trung bình": {color:"#7E5109",bg:"#FEF9E7"},
-      "Yếu": {color:"#C0392B",bg:"#FADBD8"}, "Kém": {color:"#C0392B",bg:"#FADBD8"},
-    };
-    const c = map[level] || {color:"#555",bg:"#eee"};
-    return `<span style="padding:3px 14px;border-radius:12px;font-weight:700;font-size:13px;color:${c.color};background:${c.bg};">${level || "—"}</span>`;
-  }
-
-  // ── Summary cards ─────────────────────────────────────────
-  const className     = ca.class_name      || rep.class_name || "—";
-  const totalStudents = ca.total_students  || rep.summary?.total_students || 0;
-  const avgScore      = ca.avg_score       ?? rep.summary?.avg_score ?? "—";
-  const belowPct      = ca.below_avg_percent ?? rep.summary?.below_avg_percent ?? "—";
-  const level         = cc.level           || rep.summary?.level || "—";
-
+  // ── Thanh tìm kiếm + bộ đếm ───────────────────────────────
   container.insertAdjacentHTML("beforeend", `
-    <div class="summary-cards fade-in" id="class-summary-cards">
-      <div class="summary-card"><div class="card-icon blue">🏫</div><div class="card-data"><span class="card-value">${className}</span><span class="card-label">Tên Lớp</span></div></div>
-      <div class="summary-card"><div class="card-icon green">🎓</div><div class="card-data"><span class="card-value">${totalStudents}</span><span class="card-label">Sĩ Số</span></div></div>
-      <div class="summary-card"><div class="card-icon purple">📈</div><div class="card-data"><span class="card-value">${avgScore}/10</span><span class="card-label">Điểm TB</span></div></div>
-      <div class="summary-card"><div class="card-icon red">⚠️</div><div class="card-data"><span class="card-value">${belowPct}%</span><span class="card-label">Dưới Trung Bình</span></div></div>
+    <div style="display:flex;align-items:center;gap:12px;margin-bottom:20px;flex-wrap:wrap;">
+      <div style="position:relative;flex:1;min-width:220px;max-width:400px;">
+        <span style="position:absolute;left:12px;top:50%;transform:translateY(-50%);font-size:15px;pointer-events:none;">🔍</span>
+        <input id="sheet4-search" type="text" placeholder="Tìm kiếm theo tên lớp…"
+          style="width:100%;box-sizing:border-box;padding:10px 14px 10px 38px;border:1.5px solid #d0d7de;border-radius:8px;font-size:14px;outline:none;transition:border .2s;"
+          oninput="filterSheet4Classes()"
+          onfocus="this.style.borderColor='#2E86C1'"
+          onblur="this.style.borderColor='#d0d7de'">
+      </div>
+      <span id="sheet4-count" style="font-size:13px;color:#666;white-space:nowrap;">
+        ${apiSheet4Data.length} lớp
+      </span>
+      <button onclick="document.getElementById('sheet4-search').value='';filterSheet4Classes();"
+        style="padding:8px 16px;border:1.5px solid #d0d7de;border-radius:8px;background:#fff;font-size:13px;color:#555;cursor:pointer;">
+        ✕ Xóa
+      </button>
     </div>
+    <div id="sheet4-classes-wrapper"></div>
   `);
 
-  // ── Nhận xét tổng thể (class_commentary) ─────────────────
-  const summary  = cc.summary  || "";
-  const insights = cc.insights || rep.insights || [];
-  const actions  = cc.actions  || rep.action_plan || [];
+  // Render tất cả lớp vào wrapper
+  renderSheet4Classes(apiSheet4Data);
+}
+
+// ── Lọc lớp theo từ khóa ──────────────────────────────────
+function filterSheet4Classes() {
+  const keyword = (document.getElementById("sheet4-search")?.value || "").trim().toLowerCase();
+  const filtered = keyword
+    ? apiSheet4Data.filter(item => {
+        const name = (item.class_name || "").toLowerCase();
+        return name.includes(keyword);
+      })
+    : apiSheet4Data;
+  const countEl = document.getElementById("sheet4-count");
+  if (countEl) countEl.textContent = `${filtered.length} / ${apiSheet4Data.length} lớp`;
+  renderSheet4Classes(filtered);
+}
+
+// ── Render danh sách lớp ──────────────────────────────────
+// ── Biến lưu lớp đang chọn ───────────────────────────────
+let _sheet4ActiveIdx = 0;
+
+function renderSheet4Classes(dataArr) {
+  const wrapper = document.getElementById("sheet4-classes-wrapper");
+  if (!wrapper) return;
+  wrapper.innerHTML = "";
+
+  if (!dataArr.length) {
+    wrapper.innerHTML = `<div style="padding:32px;text-align:center;color:#aaa;font-size:15px;">🔍 Không tìm thấy lớp phù hợp.</div>`;
+    return;
+  }
+
+  // ── Hàng nút lớp ─────────────────────────────────────────
+  const btnBar = document.createElement("div");
+  btnBar.id = "sheet4-btn-bar";
+  btnBar.style.cssText = "display:flex;flex-wrap:wrap;gap:8px;margin-bottom:20px;";
+
+  dataArr.forEach((s4, idx) => {
+    const smr   = s4.summary || {};
+    const name  = s4.class_name || `Lớp ${idx+1}`;
+    const level = smr.level || "";
+    const levelColors = {
+      "Xuất sắc":"#1D6A39","Tốt":"#1D6A39","Khá":"#7E5109",
+      "Trung bình":"#7E5109","Yếu":"#C0392B","Kém":"#C0392B"
+    };
+    const lc = levelColors[level] || "#2E86C1";
+
+    const btn = document.createElement("button");
+    btn.id = `sheet4-btn-${idx}`;
+    btn.textContent = name;
+    btn.style.cssText = `padding:8px 16px;border-radius:20px;border:2px solid ${lc};background:#fff;color:${lc};font-size:13px;font-weight:600;cursor:pointer;transition:all .18s;`;
+    btn.onmouseenter = () => { if (btn.dataset.active !== "1") { btn.style.background = lc + "18"; } };
+    btn.onmouseleave = () => { if (btn.dataset.active !== "1") { btn.style.background = "#fff"; } };
+    btn.onclick = () => showSheet4Class(dataArr, idx);
+    btnBar.appendChild(btn);
+  });
+  wrapper.appendChild(btnBar);
+
+  // ── Vùng chi tiết lớp ────────────────────────────────────
+  const detailPanel = document.createElement("div");
+  detailPanel.id = "sheet4-detail-panel";
+  wrapper.appendChild(detailPanel);
+
+  // Hiện lớp đầu tiên mặc định
+  showSheet4Class(dataArr, 0);
+}
+
+// ── Hiển thị chi tiết 1 lớp ──────────────────────────────
+function showSheet4Class(dataArr, idx) {
+  _sheet4ActiveIdx = idx;
+
+  // Cập nhật trạng thái nút
+  dataArr.forEach((_, i) => {
+    const btn = document.getElementById(`sheet4-btn-${i}`);
+    if (!btn) return;
+    const smr   = dataArr[i].summary || {};
+    const level = smr.level || "";
+    const lc = { "Xuất sắc":"#1D6A39","Tốt":"#1D6A39","Khá":"#7E5109","Trung bình":"#7E5109","Yếu":"#C0392B","Kém":"#C0392B" }[level] || "#2E86C1";
+    if (i === idx) {
+      btn.dataset.active = "1";
+      btn.style.background = lc;
+      btn.style.color = "#fff";
+      btn.style.boxShadow = `0 3px 10px ${lc}55`;
+    } else {
+      btn.dataset.active = "0";
+      btn.style.background = "#fff";
+      btn.style.color = lc;
+      btn.style.boxShadow = "none";
+    }
+  });
+
+  const s4      = dataArr[idx];
+  const smr     = s4.summary   || {};
+  const hist    = s4.histogram || {};
+  const className     = s4.class_name            || `Lớp ${idx+1}`;
+  const totalStudents = smr.total_students       ?? 0;
+  const avgScore      = smr.avg_score            ?? "—";
+  const belowPct      = smr.below_avg_percent    ?? "—";
+  const level         = smr.level                || "—";
+  const maxScore      = smr.max_score            ?? "—";
+  const minScore      = smr.min_score            ?? "—";
+  const hardestQ      = s4.hardest_question      || {};
+  const easiestQ      = s4.easiest_question      || {};
+  const insights      = s4.insights              || [];
+  const actions       = s4.action_plan           || [];
+
+  const panel = document.getElementById("sheet4-detail-panel");
+  if (!panel) return;
+
+  panel.innerHTML = `
+    <div class="fade-in" style="border:1.5px solid #e0e7ef;border-radius:14px;overflow:hidden;box-shadow:0 2px 12px rgba(0,0,0,0.07);">
+      <div style="padding:16px 22px;background:linear-gradient(135deg,#1A5276,#2E86C1);display:flex;align-items:center;gap:12px;flex-wrap:wrap;">
+        <span style="font-size:20px;">🏫</span>
+        <span style="font-size:17px;font-weight:700;color:#fff;">${className}</span>
+        ${levelBadge(level)}
+        <span style="margin-left:auto;color:#AED6F1;font-size:13px;">
+          👥 ${totalStudents} HS &nbsp;|&nbsp; ĐTB: <b style="color:#fff;">${avgScore}/10</b> &nbsp;|&nbsp;
+          Dưới TB: <b style="color:${parseFloat(belowPct)>30?"#F1948A":"#A9DFBF"};">${belowPct}%</b>
+        </span>
+      </div>
+      <div style="padding:20px;">
+        ${buildClassBody(s4, hist, className, totalStudents, avgScore, belowPct, level, maxScore, minScore, "—", hardestQ, easiestQ, "", insights, actions)}
+      </div>
+    </div>
+  `;
+}
+
+// ── Toggle collapse lớp ──────────────────────────────────
+// ── Build nội dung chi tiết 1 lớp ────────────────────────
+// s4 = object lớp trực tiếp từ API; hist = s4.histogram; các tham số còn lại đã extract sẵn
+function buildClassBody(s4, hist, className, totalStudents, avgScore, belowPct, level, maxScore, minScore, belowCount, hardestQ, easiestQ, summary, insights, actions) {
+  let html = "";
+
+  // Nhận xét tổng thể
   if (summary || insights.length) {
-    const insightList = insights.map(t =>
-      `<li style="margin-bottom:5px;font-size:13.5px;color:#2c3e50;">${t}</li>`
-    ).join("");
-    container.insertAdjacentHTML("beforeend", `
-      <div class="table-card fade-in" style="margin-bottom:20px;background:#EBF5FB;border-left:4px solid #2E86C1;">
+    const insightList = insights.map(t => `<li style="margin-bottom:5px;font-size:13.5px;color:#2c3e50;">${t}</li>`).join("");
+    html += `
+      <div style="margin-bottom:16px;background:#EBF5FB;border-left:4px solid #2E86C1;border-radius:0 8px 8px 0;padding:14px 16px;">
         <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px;">
           <span style="font-size:13px;font-weight:600;color:#1a5276;text-transform:uppercase;letter-spacing:.5px;">💬 Nhận Xét Tổng Thể</span>
           ${levelBadge(level)}
         </div>
         ${summary ? `<p style="margin:0 0 10px;font-size:14px;color:#2c3e50;font-weight:600;">${summary}</p>` : ""}
         ${insightList ? `<ul style="margin:0;padding-left:20px;">${insightList}</ul>` : ""}
-      </div>
-    `);
+      </div>`;
   }
 
-  // ── Thống kê lớp + câu hỏi khó/dễ ───────────────────────
-  const maxScore   = ca.max_score ?? rep.summary?.max_score ?? "—";
-  const minScore   = ca.min_score ?? rep.summary?.min_score ?? "—";
-  const belowCount = ca.below_avg_count ?? "—";
-  const hardestQ   = ca.hardest_question  || rep.hardest_question  || {};
-  const easiestQ   = ca.easiest_question  || rep.easiest_question  || {};
-
-  container.insertAdjacentHTML("beforeend", `
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:20px;">
-      <div class="table-card fade-in">
-        <div style="font-size:12px;font-weight:600;color:#5d6d7e;margin-bottom:12px;text-transform:uppercase;">📋 Thống Kê Lớp</div>
+  // Thống kê + câu khó/dễ
+  html += `
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px;">
+      <div class="table-card" style="padding:14px;">
+        <div style="font-size:12px;font-weight:600;color:#5d6d7e;margin-bottom:10px;text-transform:uppercase;">📋 Thống Kê Lớp</div>
         <table style="width:100%;border-collapse:collapse;font-size:13px;">
           <tbody>
-            <tr><td style="padding:6px 10px;color:#555;">Điểm TB</td><td style="padding:6px 10px;font-weight:700;text-align:right;">${avgScore}/10</td></tr>
-            <tr style="background:#f8f9fa;"><td style="padding:6px 10px;color:#555;">Điểm cao nhất</td><td style="padding:6px 10px;font-weight:700;text-align:right;color:#1D6A39;">${maxScore}</td></tr>
-            <tr><td style="padding:6px 10px;color:#555;">Điểm thấp nhất</td><td style="padding:6px 10px;font-weight:700;text-align:right;color:#C0392B;">${minScore}</td></tr>
-            <tr style="background:#f8f9fa;"><td style="padding:6px 10px;color:#555;">Dưới TB</td><td style="padding:6px 10px;font-weight:700;text-align:right;">${belowCount} HS (${belowPct}%)</td></tr>
-            <tr><td style="padding:6px 10px;color:#555;">Xếp loại lớp</td><td style="padding:6px 10px;text-align:right;">${levelBadge(level)}</td></tr>
+            <tr><td style="padding:5px 8px;color:#555;">Điểm TB</td><td style="padding:5px 8px;font-weight:700;text-align:right;">${avgScore}/10</td></tr>
+            <tr style="background:#f8f9fa;"><td style="padding:5px 8px;color:#555;">Điểm cao nhất</td><td style="padding:5px 8px;font-weight:700;text-align:right;color:#1D6A39;">${maxScore}</td></tr>
+            <tr><td style="padding:5px 8px;color:#555;">Điểm thấp nhất</td><td style="padding:5px 8px;font-weight:700;text-align:right;color:#C0392B;">${minScore}</td></tr>
+            <tr style="background:#f8f9fa;"><td style="padding:5px 8px;color:#555;">Dưới TB</td><td style="padding:5px 8px;font-weight:700;text-align:right;">${belowCount} HS (${belowPct}%)</td></tr>
+            <tr><td style="padding:5px 8px;color:#555;">Xếp loại lớp</td><td style="padding:5px 8px;text-align:right;">${levelBadge(level)}</td></tr>
           </tbody>
         </table>
       </div>
-      <div class="table-card fade-in">
-        <div style="font-size:12px;font-weight:600;color:#5d6d7e;margin-bottom:12px;text-transform:uppercase;">❓ Câu Hỏi Đặc Biệt</div>
+      <div class="table-card" style="padding:14px;">
+        <div style="font-size:12px;font-weight:600;color:#5d6d7e;margin-bottom:10px;text-transform:uppercase;">❓ Câu Hỏi Đặc Biệt</div>
         <div style="background:#FADBD8;border-radius:8px;padding:10px 14px;margin-bottom:10px;">
           <div style="font-size:11px;color:#C0392B;font-weight:600;margin-bottom:3px;">🔴 KHÓ NHẤT</div>
           <div style="font-size:15px;font-weight:700;color:#C0392B;">${hardestQ.question || "—"}</div>
@@ -1204,163 +1475,136 @@ function renderSheet4Tab() {
           <div style="font-size:12px;color:#666;">ĐTB: ${easiestQ.avg_score ?? "—"}</div>
         </div>
       </div>
-    </div>
-  `);
+    </div>`;
 
-  // ── Biểu đồ phân bổ điểm (class_histogram) ───────────────
-  const histRanges = ch.ranges || [];
-  const histCounts = ch.counts || [];
+  // Histogram
+  const histRanges = hist.ranges || [];
+  const histCounts = hist.counts || [];
   if (histRanges.length && histCounts.length) {
     const histTotal = histCounts.reduce((s, v) => s + (parseInt(v)||0), 0) || 1;
     const barColors = ["#E74C3C","#E67E22","#F1C40F","#2ECC71","#2E86C1"];
     const bars = histRanges.map((range, i) => {
-      const cnt  = parseInt(histCounts[i] || 0);
-      const pct  = Math.round((cnt / histTotal) * 100);
-      const col  = barColors[i] || "#95A5A6";
+      const cnt = parseInt(histCounts[i] || 0);
+      const pct = Math.round((cnt / histTotal) * 100);
       return `
-        <div style="margin-bottom:8px;">
-          <div style="display:flex;align-items:center;gap:8px;margin-bottom:3px;">
-            <span style="width:44px;font-size:12px;font-weight:600;color:#555;">${range}</span>
-            <div style="flex:1;background:#eee;border-radius:5px;height:18px;overflow:hidden;">
-              <div style="width:${pct}%;background:${col};height:100%;border-radius:5px;transition:width .4s;"></div>
-            </div>
-            <span style="width:76px;font-size:12px;color:#333;text-align:right;">${cnt} HS (${pct}%)</span>
+        <div style="margin-bottom:7px;display:flex;align-items:center;gap:8px;">
+          <span style="width:44px;font-size:12px;font-weight:600;color:#555;">${range}</span>
+          <div style="flex:1;background:#eee;border-radius:5px;height:16px;overflow:hidden;">
+            <div style="width:${pct}%;background:${barColors[i]||"#95A5A6"};height:100%;border-radius:5px;transition:width .4s;"></div>
           </div>
+          <span style="width:76px;font-size:12px;color:#333;text-align:right;">${cnt} HS (${pct}%)</span>
         </div>`;
     }).join("");
-    container.insertAdjacentHTML("beforeend", `
-      <div class="table-card fade-in" style="margin-bottom:20px;">
-        <div style="font-size:13px;font-weight:600;color:#5d6d7e;margin-bottom:14px;text-transform:uppercase;letter-spacing:.5px;">📊 Phân Bổ Điểm – ${ch.class_name || className}</div>
+    html += `
+      <div class="table-card" style="padding:14px;margin-bottom:16px;">
+        <div style="font-size:12px;font-weight:600;color:#5d6d7e;margin-bottom:12px;text-transform:uppercase;">📊 Phân Bổ Điểm – ${className}</div>
         ${bars}
-      </div>
-    `);
+      </div>`;
   }
 
-  // ── Top 5 / Bottom 5 học sinh ─────────────────────────────
-  const top5    = ca.top5     || rep.top_students    || [];
-  const bottom5 = ca.bottom5  || rep.bottom_students || [];
+  // Top5 / Bottom5
+  const top5    = s4.top_students    || [];
+  const bottom5 = s4.bottom_students || [];
   if (top5.length || bottom5.length) {
     function studentRows(arr) {
       return arr.map((s, i) => {
         const sc = parseFloat(s.total_score) || 0;
         const c  = scoreColor(sc);
         return `<tr style="${i%2===1?"background:#f8f9fa;":""}">
-          <td style="padding:6px 10px;font-size:12px;color:#888;text-align:center;">${i+1}</td>
-          <td style="padding:6px 10px;font-weight:600;">${s.name || "—"}</td>
-          <td style="padding:6px 10px;font-size:12px;color:#888;">${s.id || "—"}</td>
-          <td style="padding:6px 10px;text-align:center;font-weight:700;color:${c.color};background:${c.bg};">${s.total_score ?? "—"}</td>
+          <td style="padding:5px 8px;font-size:12px;color:#888;text-align:center;">${i+1}</td>
+          <td style="padding:5px 8px;font-weight:600;">${s.name||"—"}</td>
+          <td style="padding:5px 8px;font-size:12px;color:#888;">${s.id||"—"}</td>
+          <td style="padding:5px 8px;text-align:center;font-weight:700;color:${c.color};background:${c.bg};">${s.total_score??""}</td>
         </tr>`;
       }).join("") || `<tr><td colspan="4" style="padding:8px;color:#999;text-align:center;">—</td></tr>`;
     }
-    container.insertAdjacentHTML("beforeend", `
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:20px;">
-        <div class="table-card fade-in">
-          <div style="font-size:12px;font-weight:600;color:#1D6A39;margin-bottom:10px;text-transform:uppercase;">🏆 Top 5 Cao Nhất</div>
+    html += `
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px;">
+        <div class="table-card" style="padding:14px;">
+          <div style="font-size:12px;font-weight:600;color:#1D6A39;margin-bottom:8px;text-transform:uppercase;">🏆 Top 5 Cao Nhất</div>
           <table style="width:100%;border-collapse:collapse;font-size:13px;">
-            <thead><tr style="background:#D5F5E3;">
-              <th style="padding:5px 10px;font-size:11px;color:#1D6A39;">#</th>
-              <th style="padding:5px 10px;font-size:11px;color:#1D6A39;text-align:left;">Họ tên</th>
-              <th style="padding:5px 10px;font-size:11px;color:#1D6A39;">Mã HS</th>
-              <th style="padding:5px 10px;font-size:11px;color:#1D6A39;">Điểm</th>
-            </tr></thead>
+            <thead><tr style="background:#D5F5E3;"><th style="padding:4px 8px;font-size:11px;color:#1D6A39;">#</th><th style="padding:4px 8px;font-size:11px;color:#1D6A39;text-align:left;">Họ tên</th><th style="padding:4px 8px;font-size:11px;color:#1D6A39;">Mã HS</th><th style="padding:4px 8px;font-size:11px;color:#1D6A39;">Điểm</th></tr></thead>
             <tbody>${studentRows(top5)}</tbody>
           </table>
         </div>
-        <div class="table-card fade-in">
-          <div style="font-size:12px;font-weight:600;color:#C0392B;margin-bottom:10px;text-transform:uppercase;">⚠️ Bottom 5 Thấp Nhất</div>
+        <div class="table-card" style="padding:14px;">
+          <div style="font-size:12px;font-weight:600;color:#C0392B;margin-bottom:8px;text-transform:uppercase;">⚠️ Bottom 5 Thấp Nhất</div>
           <table style="width:100%;border-collapse:collapse;font-size:13px;">
-            <thead><tr style="background:#FADBD8;">
-              <th style="padding:5px 10px;font-size:11px;color:#C0392B;">#</th>
-              <th style="padding:5px 10px;font-size:11px;color:#C0392B;text-align:left;">Họ tên</th>
-              <th style="padding:5px 10px;font-size:11px;color:#C0392B;">Mã HS</th>
-              <th style="padding:5px 10px;font-size:11px;color:#C0392B;">Điểm</th>
-            </tr></thead>
+            <thead><tr style="background:#FADBD8;"><th style="padding:4px 8px;font-size:11px;color:#C0392B;">#</th><th style="padding:4px 8px;font-size:11px;color:#C0392B;text-align:left;">Họ tên</th><th style="padding:4px 8px;font-size:11px;color:#C0392B;">Mã HS</th><th style="padding:4px 8px;font-size:11px;color:#C0392B;">Điểm</th></tr></thead>
             <tbody>${studentRows(bottom5)}</tbody>
           </table>
         </div>
-      </div>
-    `);
+      </div>`;
   }
 
-  // ── Thống kê từng câu hỏi (question_stats) ───────────────
-  const qStats = ca.question_stats || [];
+  // Question stats — API mới không có question_stats riêng, bỏ qua block này
+  // (focus_questions sẽ hiển thị phía dưới)
+  const qStats = [];
   if (qStats.length) {
-    // Tìm max để normalize bar (thường thang 4 hoặc 10)
     const maxQ = Math.max(...qStats.map(q => parseFloat(q.avg_score)||0), 1);
     const qRows = qStats.map((q, i) => {
       const c   = scoreColor(q.avg_score);
       const bar = Math.round((parseFloat(q.avg_score)||0) / maxQ * 100);
       return `<tr style="${i%2===1?"background:#f8f9fa;":""}">
-        <td style="padding:8px 14px;font-weight:700;color:#2E86C1;width:70px;white-space:nowrap;">${q.question}</td>
-        <td style="padding:8px 14px;">
+        <td style="padding:7px 12px;font-weight:700;color:#2E86C1;width:70px;white-space:nowrap;">${q.question}</td>
+        <td style="padding:7px 12px;">
           <div style="background:#e9ecef;border-radius:6px;height:14px;overflow:hidden;width:100%;">
             <div style="width:${bar}%;background:${c.color};height:100%;border-radius:6px;transition:width .4s;"></div>
           </div>
         </td>
-        <td style="padding:8px 14px;text-align:center;width:90px;">
-          <span style="display:inline-block;padding:3px 12px;border-radius:12px;font-size:13px;font-weight:700;color:${c.color};background:${c.bg};">${q.avg_score}</span>
+        <td style="padding:7px 12px;text-align:center;width:90px;">
+          <span style="display:inline-block;padding:3px 10px;border-radius:12px;font-size:12px;font-weight:700;color:${c.color};background:${c.bg};">${q.avg_score}</span>
         </td>
       </tr>`;
     }).join("");
-    container.insertAdjacentHTML("beforeend", `
-      <div class="table-card fade-in" style="margin-bottom:20px;">
-        <div style="font-size:13px;font-weight:600;color:#5d6d7e;margin-bottom:12px;text-transform:uppercase;letter-spacing:.5px;">📝 Thống Kê Từng Câu Hỏi</div>
+    html += `
+      <div class="table-card" style="padding:14px;margin-bottom:16px;">
+        <div style="font-size:12px;font-weight:600;color:#5d6d7e;margin-bottom:10px;text-transform:uppercase;">📝 Thống Kê Từng Câu Hỏi</div>
         <table style="width:100%;border-collapse:collapse;font-size:13px;table-layout:fixed;">
-          <colgroup>
-            <col style="width:70px;">
-            <col>
-            <col style="width:90px;">
-          </colgroup>
+          <colgroup><col style="width:70px;"><col><col style="width:90px;"></colgroup>
           <thead><tr style="background:#1A5276;">
-            <th style="padding:8px 14px;color:#fff;text-align:left;">Câu</th>
-            <th style="padding:8px 14px;color:#fff;text-align:left;">Phân bổ điểm</th>
-            <th style="padding:8px 14px;color:#fff;text-align:center;">ĐTB</th>
+            <th style="padding:7px 12px;color:#fff;text-align:left;">Câu</th>
+            <th style="padding:7px 12px;color:#fff;text-align:left;">Phân bổ điểm</th>
+            <th style="padding:7px 12px;color:#fff;text-align:center;">ĐTB</th>
           </tr></thead>
           <tbody>${qRows}</tbody>
         </table>
-      </div>
-    `);
+      </div>`;
   }
 
-  // ── Focus questions + Action plan ────────────────────────
-  const focusQ = cc.focus_questions || rep.focus_questions || [];
+  // Focus questions + Action plan
+  const focusQ = s4.focus_questions || [];
   if (focusQ.length || actions.length) {
     const fqRows = focusQ.map((q, qi) => {
       const c = scoreColor(q.avg_score);
       return `<tr style="${qi%2===1?"background:#f8f9fa;":""}">
-        <td style="padding:6px 12px;font-weight:700;color:#C0392B;">${q.question ?? "—"}</td>
-        <td style="padding:6px 12px;text-align:center;">
-          <span style="padding:2px 10px;border-radius:10px;font-weight:700;font-size:13px;color:${c.color};background:${c.bg};">${q.avg_score ?? "—"}</span>
-        </td>
+        <td style="padding:5px 10px;font-weight:700;color:#C0392B;">${q.question??""}</td>
+        <td style="padding:5px 10px;text-align:center;"><span style="padding:2px 10px;border-radius:10px;font-weight:700;font-size:12px;color:${c.color};background:${c.bg};">${q.avg_score??""}</span></td>
       </tr>`;
     }).join("") || `<tr><td colspan="2" style="padding:8px;color:#999;">Không có</td></tr>`;
-
     const apItems = actions.map((a, ai) =>
-      `<li style="margin-bottom:8px;padding:9px 14px;background:${ai%2===0?"#EBF5FB":"#F0FFF4"};border-left:3px solid ${ai%2===0?"#2E86C1":"#27AE60"};border-radius:4px;font-size:13.5px;color:#2c3e50;line-height:1.5;">${a}</li>`
+      `<li style="margin-bottom:8px;padding:9px 14px;background:${ai%2===0?"#EBF5FB":"#F0FFF4"};border-left:3px solid ${ai%2===0?"#2E86C1":"#27AE60"};border-radius:4px;font-size:13px;color:#2c3e50;line-height:1.5;">${a}</li>`
     ).join("") || `<li style="color:#999;">Không có kế hoạch</li>`;
-
-    container.insertAdjacentHTML("beforeend", `
-      <div class="table-card fade-in" style="margin-bottom:20px;">
-        <h3 style="margin:0 0 16px;font-size:16px;color:#1a5276;">🎯 Câu Cần Tập Trung & Kế Hoạch Hành Động</h3>
-        <div style="display:grid;grid-template-columns:1fr 2fr;gap:18px;">
-          <div style="background:#fafbfc;border:1px solid #e8ecf0;border-radius:10px;padding:14px;">
-            <div style="font-size:12px;font-weight:600;color:#C0392B;margin-bottom:10px;text-transform:uppercase;">🔴 Câu Cần Tập Trung</div>
+    html += `
+      <div class="table-card" style="padding:14px;margin-bottom:4px;">
+        <h3 style="margin:0 0 14px;font-size:15px;color:#1a5276;">🎯 Câu Cần Tập Trung & Kế Hoạch Hành Động</h3>
+        <div style="display:grid;grid-template-columns:1fr 2fr;gap:16px;">
+          <div style="background:#fafbfc;border:1px solid #e8ecf0;border-radius:10px;padding:12px;">
+            <div style="font-size:11px;font-weight:600;color:#C0392B;margin-bottom:8px;text-transform:uppercase;">🔴 Câu Cần Tập Trung</div>
             <table style="width:100%;border-collapse:collapse;">
-              <thead><tr style="background:#FADBD8;">
-                <th style="padding:5px 12px;font-size:12px;text-align:left;color:#922B21;">Câu</th>
-                <th style="padding:5px 12px;font-size:12px;text-align:center;color:#922B21;">ĐTB</th>
-              </tr></thead>
+              <thead><tr style="background:#FADBD8;"><th style="padding:4px 10px;font-size:12px;text-align:left;color:#922B21;">Câu</th><th style="padding:4px 10px;font-size:12px;text-align:center;color:#922B21;">ĐTB</th></tr></thead>
               <tbody>${fqRows}</tbody>
             </table>
           </div>
-          <div style="background:#fafbfc;border:1px solid #e8ecf0;border-radius:10px;padding:14px;">
-            <div style="font-size:12px;font-weight:600;color:#1a5276;margin-bottom:10px;text-transform:uppercase;">📌 Kế Hoạch Hành Động</div>
+          <div style="background:#fafbfc;border:1px solid #e8ecf0;border-radius:10px;padding:12px;">
+            <div style="font-size:11px;font-weight:600;color:#1a5276;margin-bottom:8px;text-transform:uppercase;">📌 Kế Hoạch Hành Động</div>
             <ol style="margin:0;padding-left:18px;">${apItems}</ol>
           </div>
         </div>
-      </div>
-    `);
+      </div>`;
   }
+
+  return html;
 }
 
 // ══════════════════════════════════════════════════════════════
@@ -1629,45 +1873,47 @@ function exportExcelFromAPI() {
     XLSX.utils.book_append_sheet(wb, ws3, "Hoc Sinh Yeu");
   }
 
-  // ── SHEET 4 — Phân tích Lớp (object đơn theo cấu trúc API thực tế) ──────
+  // ── SHEET 4 — Phân tích Lớp (mỗi lớp 1 dòng, cấu trúc API thực tế) ──
   if (apiSheet4Data.length) {
-    const s4root = apiSheet4Data[0];
-    const ca4  = s4root["class_analysis"]    || {};
-    const ch4  = s4root["class_histogram"]   || {};
-    const cc4  = s4root["class_commentary"]  || {};
-    const rep4 = s4root["sheet_class_report"]|| {};
+    // Mỗi phần tử trong apiSheet4Data = 1 lớp: { class_name, summary, histogram, insights, top_students, bottom_students, hardest_question, easiest_question, focus_questions, action_plan }
+    const s4Flat = apiSheet4Data.map(cls => {
+      const smr  = cls.summary           || {};
+      const hist = cls.histogram         || {};
+      const hardQ = cls.hardest_question || {};
+      const easyQ = cls.easiest_question || {};
 
-    const histRanges4 = ch4.ranges || [];
-    const histCounts4 = ch4.counts || [];
-    const histStr4    = histRanges4.map((r, i) => `${r}: ${histCounts4[i] ?? 0}`).join(" | ") || "—";
+      const histRanges = hist.ranges || [];
+      const histCounts = hist.counts || [];
+      const histStr    = histRanges.map((r, i) => `${r}: ${histCounts[i] ?? 0}`).join(" | ") || "—";
 
-    const focusQ4 = cc4.focus_questions || rep4.focus_questions || [];
-    const fqStr4  = focusQ4.map(q => `${q.question}(ĐTB:${q.avg_score})`).join(", ") || "—";
+      const focusQ = cls.focus_questions || [];
+      const fqStr  = focusQ.map(q => `${q.question}(ĐTB:${q.avg_score})`).join(", ") || "—";
 
-    const ap4     = cc4.actions || rep4.action_plan || [];
-    const apStr4  = ap4.map((a, i) => `${i+1}. ${a}`).join("\n") || "—";
+      const ap    = cls.action_plan || [];
+      const apStr = ap.map((a, i) => `${i+1}. ${a}`).join("\n") || "—";
 
-    const top5str4    = (ca4.top5    || rep4.top_students    || []).map(s => `${s.name}(${s.total_score})`).join(", ") || "—";
-    const bottom5str4 = (ca4.bottom5 || rep4.bottom_students || []).map(s => `${s.name}(${s.total_score})`).join(", ") || "—";
+      const top5str    = (cls.top_students    || []).map(s => `${s.name}(${s.total_score})`).join(", ") || "—";
+      const bottom5str = (cls.bottom_students || []).map(s => `${s.name}(${s.total_score})`).join(", ") || "—";
 
-    const s4Flat = [{
-      "Lớp":                ca4.class_name     || rep4.class_name || "—",
-      "Sĩ số":              ca4.total_students || rep4.summary?.total_students || "",
-      "Điểm TB":            ca4.avg_score      ?? rep4.summary?.avg_score ?? "",
-      "Điểm Max":           ca4.max_score      ?? rep4.summary?.max_score ?? "",
-      "Điểm Min":           ca4.min_score      ?? rep4.summary?.min_score ?? "",
-      "Dưới TB (%)":        ca4.below_avg_percent ?? rep4.summary?.below_avg_percent ?? "",
-      "Xếp loại lớp":       cc4.level          || rep4.summary?.level || "—",
-      "Câu khó nhất":       ca4.hardest_question?.question || "—",
-      "ĐTB câu khó":        ca4.hardest_question?.avg_score ?? "",
-      "Câu dễ nhất":        ca4.easiest_question?.question || "—",
-      "ĐTB câu dễ":         ca4.easiest_question?.avg_score ?? "",
-      "Phân Bổ Điểm":       histStr4,
-      "Câu Cần Tập Trung":  fqStr4,
-      "Top 5 HS":           top5str4,
-      "Bottom 5 HS":        bottom5str4,
-      "Kế Hoạch Hành Động": apStr4,
-    }];
+      return {
+        "Lớp":                cls.class_name           || "—",
+        "Sĩ số":              smr.total_students        ?? "",
+        "Điểm TB":            smr.avg_score             ?? "",
+        "Điểm Max":           smr.max_score             ?? "",
+        "Điểm Min":           smr.min_score             ?? "",
+        "Dưới TB (%)":        smr.below_avg_percent     ?? "",
+        "Xếp loại lớp":       smr.level                 || "—",
+        "Câu khó nhất":       hardQ.question            || "—",
+        "ĐTB câu khó":        hardQ.avg_score           ?? "",
+        "Câu dễ nhất":        easyQ.question            || "—",
+        "ĐTB câu dễ":         easyQ.avg_score           ?? "",
+        "Phân Bổ Điểm":       histStr,
+        "Câu Cần Tập Trung":  fqStr,
+        "Top 5 HS":           top5str,
+        "Bottom 5 HS":        bottom5str,
+        "Kế Hoạch Hành Động": apStr,
+      };
+    });
 
     const keys = Object.keys(s4Flat[0]);
     const ws4 = XLSX.utils.json_to_sheet(s4Flat);
@@ -1697,6 +1943,8 @@ function exportExcelFromAPI() {
 
     const scoreIdx4 = keys.indexOf("Điểm TB");
     const belowIdx4 = keys.indexOf("Dưới TB (%)");
+    const levelIdx4 = keys.indexOf("Xếp loại lớp");
+    const apIdx4    = keys.indexOf("Kế Hoạch Hành Động");
 
     s4Flat.forEach((row, ri) => {
       const rowIdx = ri + 1;
@@ -1706,9 +1954,9 @@ function exportExcelFromAPI() {
       if (scoreIdx4 >= 0) {
         const d = parseFloat(row["Điểm TB"]) || 0;
         if (d > 0) {
-          if (d < 4)      setCell(ws4, rowIdx, scoreIdx4, { ...S.fail, alignment: { horizontal: "center" } });
+          if (d < 4)        setCell(ws4, rowIdx, scoreIdx4, { ...S.fail, alignment: { horizontal: "center" } });
           else if (d < 6.5) setCell(ws4, rowIdx, scoreIdx4, { ...S.pass, alignment: { horizontal: "center" } });
-          else            setCell(ws4, rowIdx, scoreIdx4, { ...S.exc,  alignment: { horizontal: "center" } });
+          else              setCell(ws4, rowIdx, scoreIdx4, { ...S.exc,  alignment: { horizontal: "center" } });
         }
       }
       // Dưới TB %
@@ -1718,12 +1966,18 @@ function exportExcelFromAPI() {
         else if (pct >= 20) setCell(ws4, rowIdx, belowIdx4, { ...S.pass, alignment: { horizontal: "center" } });
         else                setCell(ws4, rowIdx, belowIdx4, { ...S.exc,  alignment: { horizontal: "center" } });
       }
-      // Cột kế hoạch wrap text
-      const apIdx4 = keys.indexOf("Kế Hoạch Hành Động");
+      // Xếp loại lớp
+      if (levelIdx4 >= 0) {
+        const lv = row["Xếp loại lớp"] || "";
+        const lvMap = { "Xuất sắc": S.exc, "Tốt": S.exc, "Khá": S.pass, "Trung bình": S.pass, "Yếu": S.fail, "Kém": S.fail };
+        const st = lvMap[lv];
+        if (st) setCell(ws4, rowIdx, levelIdx4, { ...st, alignment: { horizontal: "center" } });
+      }
+      // Kế hoạch hành động: wrap text
       if (apIdx4 >= 0) {
         const addr = XLSX.utils.encode_cell({ r: rowIdx, c: apIdx4 });
         if (!ws4[addr]) ws4[addr] = { v: "", t: "s" };
-        ws4[addr].s = { ...ws4[addr].s, alignment: { wrapText: true, vertical: "top" } };
+        ws4[addr].s = { ...(ws4[addr].s || {}), alignment: { wrapText: true, vertical: "top" } };
       }
     });
 
