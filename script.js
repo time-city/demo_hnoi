@@ -731,9 +731,8 @@ function renderAll() {
 // ─── DASHBOARD SUMMARY (from API Sheet 2 & Sheet 3) ─────────
 function renderDashboardSummary() {
   const totalStudents = apiSheet2Data.length;
-  // Score (10) là key thực tế từ API — "Tổng điểm" bị null
   const scores = apiSheet2Data.map(r => parseFloat(
-    r["Score (10)"] ?? r["Điểm thang 10"] ?? r["diem_10"] ?? r["Tổng điểm"] ?? 0
+    r["Tổng điểm"] ?? 0
   )).filter(v => !isNaN(v) && v > 0);
   const avgScore = scores.length ? (scores.reduce((a, b) => a + b, 0) / scores.length).toFixed(1) : "—";
   const highest = scores.length ? Math.max(...scores) : "—";
@@ -745,7 +744,7 @@ function renderDashboardSummary() {
     el.innerHTML = `
       <div class="summary-card"><div class="card-icon blue">🎓</div><div class="card-data"><span class="card-value">${totalStudents}</span><span class="card-label">Tổng Học Sinh</span></div></div>
       <div class="summary-card"><div class="card-icon green">📈</div><div class="card-data"><span class="card-value">${avgScore}</span><span class="card-label">Điểm Trung Bình</span></div></div>
-      <div class="summary-card"><div class="card-icon purple">⭐</div><div class="card-data"><span class="card-value">${highest}</span><span class="card-label">Điểm Cao Nhất</span></div></div>
+     
       <div class="summary-card"><div class="card-icon red">⚠️</div><div class="card-data"><span class="card-value">${totalWeak}</span><span class="card-label">Học Sinh Yếu</span></div></div>
     `;
   }
@@ -764,7 +763,6 @@ function renderSheet1Tab() {
       <th>Tỉ Lệ Không Đạt</th>
       <th>Tỉ Lệ Đạt</th>
       <th>Tỉ Lệ Xuất Sắc</th>
-      <th>Tỉ Lệ Cần Cải Thiện</th>
       <th>Gợi Ý</th>
     `;
   }
@@ -784,7 +782,6 @@ function renderSheet1Tab() {
       <td class="${isDanger ? "cell-danger" : ""}">${failRate}%</td>
       <td>${row["tỉ_lệ_pass"] || row["ti_le_pass"] || row["Tỉ lệ Pass"] || "—"}%</td>
       <td>${row["tỉ_lệ_excellent"] || row["ti_le_excellent"] || row["Tỉ lệ Excellent"] || "—"}%</td>
-      <td>${row["tỉ_lệ_cần_cải_thiện"] || row["ti_le_can_cai_thien"] || row["Tỉ lệ Cần Cải Thiện"] || "—"}%</td>
       <td class="eval-text">${row["suggestion"] || row["Suggestion"] || "—"}</td>
     `;
     tbody.appendChild(tr);
@@ -855,7 +852,7 @@ function renderSheet1Tab() {
 function renderSheet2Tab() {
   const n = apiSheet2Data.length;
   const scores = apiSheet2Data.map(r => parseFloat(
-    r["Score (10)"] ?? r["Điểm thang 10"] ?? r["diem_10"] ?? 0
+    r["Tổng điểm"] ?? 0
   )).filter(v => !isNaN(v) && v > 0);
   const avgScore = scores.length ? (scores.reduce((a, b) => a + b, 0) / scores.length).toFixed(1) : "—";
   const highRisk  = apiSheet2Data.filter(r => String(r["Risk Level"] || "").toUpperCase() === "HIGH").length;
@@ -878,7 +875,6 @@ function renderSheet2Tab() {
       <th>Mã HS</th>
       <th>Họ và Tên</th>
       <th>Tổng Điểm</th>
-      <th>Điểm Thang 10</th>
       <th>Số Xuất Sắc</th>
       <th>Số Câu Đạt</th>
       <th>Số Câu Không Đạt</th>
@@ -913,7 +909,6 @@ function renderSheet2Table(data) {
     const riskClass = getRiskBadgeClass(risk);
     const name  = r["Họ và tên"] || r["ho_va_ten"] || r["name"] || "—";
     const maHS  = r["Mã HS"]     || r["ma_hs"]     || r["id"]   || "";
-    const score10 = r["Score (10)"] ?? r["Điểm thang 10"] ?? r["diem_10"] ?? "—";
     const excel = r["Excellent"]  ?? r["Số Excellent"] ?? r["so_excellent"] ?? "—";
     const pass  = r["Pass"]       ?? r["Số câu Pass"]  ?? r["so_cau_pass"]  ?? "—";
     const fail  = r["Fail"]       ?? r["Số câu Fail"]  ?? r["so_cau_fail"]  ?? "—";
@@ -928,8 +923,7 @@ function renderSheet2Table(data) {
     tr.innerHTML = `
       <td>${maHS || "—"}</td>
       <td><strong>${name}</strong></td>
-      <td>${r["Tổng điểm"] ?? "—"}</td>
-      <td><strong>${score10}</strong></td>
+      <td><strong>${r["Tổng điểm"] ?? "—"}</strong></td>
       <td>${excel}</td>
       <td>${pass}</td>
       <td>${fail}</td>
@@ -976,7 +970,7 @@ function renderSheet3Tab() {
     table.querySelector("thead tr").innerHTML = `
       <th>STT</th>
       <th>Họ và Tên</th>
-      <th>Điểm /10</th>
+      <th>Tổng Điểm</th>
       <th>Số Chuẩn Không Đạt</th>
       <th>Chuẩn Yếu</th>
       <th>Mức Nguy Cơ</th>
@@ -1000,8 +994,8 @@ function renderSheet3Tab() {
     const riskClass = getRiskBadgeClass(risk);
     // Lấy tên từ Sheet2 theo index (Sheet3 không có tên)
     const s2Match = weakStudentsFromSheet2[i] || apiSheet2Data[i] || {};
-    const name    = s2Match["Họ và tên"] || s2Match["name"] || "—";
-    const score10 = s2Match["Score (10)"] ?? s2Match["Điểm thang 10"] ?? "—";
+    const name      = s2Match["Họ và tên"] || s2Match["name"] || "—";
+    const tongDiem  = s2Match["Tổng điểm"] ?? r["Tổng điểm"] ?? "—";
     // Chuẩn yếu có thể là array
     const yeuArr  = r["Chuẩn yếu"] || r["chuan_yeu"] || [];
     const yeuStr  = Array.isArray(yeuArr) ? yeuArr.join(", ") : String(yeuArr || "—");
@@ -1010,7 +1004,7 @@ function renderSheet3Tab() {
     tr.innerHTML = `
       <td>${i + 1}</td>
       <td><strong>${name}</strong></td>
-      <td><strong>${score10}</strong></td>
+      <td><strong>${tongDiem}</strong></td>
       <td>${r["Số chuẩn Fail"] || r["so_chuan_fail"] || "—"}</td>
       <td class="std-list weak">${yeuStr}</td>
       <td><span class="risk-badge ${riskClass}">${risk}</span></td>
@@ -1416,7 +1410,7 @@ function showSheet4Class(dataArr, idx) {
         <span style="font-size:17px;font-weight:700;color:#fff;">${className}</span>
         ${levelBadge(level)}
         <span style="margin-left:auto;color:#AED6F1;font-size:13px;">
-          👥 ${totalStudents} HS &nbsp;|&nbsp; ĐTB: <b style="color:#fff;">${avgScore}/10</b> &nbsp;|&nbsp;
+          👥 ${totalStudents} HS &nbsp;|&nbsp; ĐTB: <b style="color:#fff;">${avgScore} / ${maxScore}</b> &nbsp;|&nbsp;
           Dưới TB: <b style="color:${parseFloat(belowPct)>30?"#F1948A":"#A9DFBF"};">${belowPct}%</b>
         </span>
       </div>
@@ -1433,9 +1427,14 @@ function showSheet4Class(dataArr, idx) {
 function buildClassBody(s4, hist, className, totalStudents, avgScore, belowPct, level, maxScore, minScore, belowCount, hardestQ, easiestQ, summary, insights, actions) {
   let html = "";
 
+  // Chuẩn hoá insights: thay /N sai thành /maxScore thực tế
+  const fixScore = maxScore && maxScore !== "—"
+    ? txt => String(txt).replace(/\/\d+/g, `/${maxScore}`)
+    : txt => txt;
+
   // Nhận xét tổng thể
   if (summary || insights.length) {
-    const insightList = insights.map(t => `<li style="margin-bottom:5px;font-size:13.5px;color:#2c3e50;">${t}</li>`).join("");
+    const insightList = insights.map(t => `<li style="margin-bottom:5px;font-size:13.5px;color:#2c3e50;">${fixScore(t)}</li>`).join("");
     html += `
       <div style="margin-bottom:16px;background:#EBF5FB;border-left:4px solid #2E86C1;border-radius:0 8px 8px 0;padding:14px 16px;">
         <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px;">
@@ -1454,7 +1453,7 @@ function buildClassBody(s4, hist, className, totalStudents, avgScore, belowPct, 
         <div style="font-size:12px;font-weight:600;color:#5d6d7e;margin-bottom:10px;text-transform:uppercase;">📋 Thống Kê Lớp</div>
         <table style="width:100%;border-collapse:collapse;font-size:13px;">
           <tbody>
-            <tr><td style="padding:5px 8px;color:#555;">Điểm TB</td><td style="padding:5px 8px;font-weight:700;text-align:right;">${avgScore}/10</td></tr>
+            <tr><td style="padding:5px 8px;color:#555;">Điểm TB</td><td style="padding:5px 8px;font-weight:700;text-align:right;">${avgScore}</td></tr>
             <tr style="background:#f8f9fa;"><td style="padding:5px 8px;color:#555;">Điểm cao nhất</td><td style="padding:5px 8px;font-weight:700;text-align:right;color:#1D6A39;">${maxScore}</td></tr>
             <tr><td style="padding:5px 8px;color:#555;">Điểm thấp nhất</td><td style="padding:5px 8px;font-weight:700;text-align:right;color:#C0392B;">${minScore}</td></tr>
             <tr style="background:#f8f9fa;"><td style="padding:5px 8px;color:#555;">Dưới TB</td><td style="padding:5px 8px;font-weight:700;text-align:right;">${belowCount} HS (${belowPct}%)</td></tr>
@@ -1765,7 +1764,7 @@ function exportExcelFromAPI() {
 
   // ── SHEET 2 — Phân tích Học Sinh ─────────────────────────────────
   if (apiSheet2Data.length) {
-    // Flatten array fields (Chuẩn mạnh/yếu là array) + null Tổng điểm
+    // Flatten array fields (Chuẩn mạnh/yếu là array)
     const s2Flat = apiSheet2Data.map(r => {
       const out = { ...r };
       if (Array.isArray(out["Chuẩn mạnh"])) out["Chuẩn mạnh"] = out["Chuẩn mạnh"].join(", ");
@@ -1790,9 +1789,9 @@ function exportExcelFromAPI() {
     applyHeader(ws2, keys);
     freezeTop(ws2);
 
-    // Tìm index cột Risk và Score(10) — khớp chính xác key "Score (10)"
+    // Tìm index cột Risk và Tổng điểm
     const riskColIdx  = keys.findIndex(k => /^risk/i.test(k));
-    const diem10Idx   = keys.findIndex(k => k === "Score (10)" || /thang.?10|diem.?10/i.test(k));
+    const tongDiemIdx = keys.findIndex(k => k === "Tổng điểm");
     const failColIdx  = keys.indexOf("Fail");
     const excColIdx   = keys.indexOf("Excellent");
 
@@ -1800,12 +1799,14 @@ function exportExcelFromAPI() {
       const rowIdx = ri + 1;
       applyRowBase(ws2, rowIdx, keys.length, ri % 2 === 1);
 
-      // Cột điểm thang 10
-      if (diem10Idx >= 0) {
-        const d = parseFloat(row[keys[diem10Idx]]) || 0;
-        if (d < 5)      setCell(ws2, rowIdx, diem10Idx, { ...S.fail, alignment: { horizontal: "center" } });
-        else if (d < 7) setCell(ws2, rowIdx, diem10Idx, { ...S.pass, alignment: { horizontal: "center" } });
-        else            setCell(ws2, rowIdx, diem10Idx, { ...S.exc,  alignment: { horizontal: "center" } });
+      // Cột Tổng điểm — tô màu
+      if (tongDiemIdx >= 0) {
+        const d = parseFloat(row[keys[tongDiemIdx]]) || 0;
+        if (d > 0) {
+          if (d < 20)      setCell(ws2, rowIdx, tongDiemIdx, { ...S.fail, alignment: { horizontal: "center" } });
+          else if (d < 35) setCell(ws2, rowIdx, tongDiemIdx, { ...S.pass, alignment: { horizontal: "center" } });
+          else             setCell(ws2, rowIdx, tongDiemIdx, { ...S.exc,  alignment: { horizontal: "center" } });
+        }
       }
       // Cột Risk
       if (riskColIdx >= 0) setCell(ws2, rowIdx, riskColIdx, riskStyle(row[keys[riskColIdx]]));
@@ -2052,10 +2053,10 @@ function exportExcelFromComputed() {
   // ═══════════════════════════════════════
   // Sheet 2 — Student Analytics (colored)
   // ═══════════════════════════════════════
-  const s2Hdr = ["Mã HS", "Họ và Tên", "Lớp", ...STANDARDS, "Tổng Điểm", "Điểm /10", "Xuất Sắc", "Đạt", "Không Đạt", "Chuẩn Mạnh", "Chuẩn Yếu", "Cần Cải Thiện", "Mức Nguy Cơ", "Đánh Giá"];
+  const s2Hdr = ["Mã HS", "Họ và Tên", "Lớp", ...STANDARDS, "Tổng Điểm", "Xuất Sắc", "Đạt", "Không Đạt", "Chuẩn Mạnh", "Chuẩn Yếu", "Cần Cải Thiện", "Mức Nguy Cơ", "Đánh Giá"];
   const s2Data = [s2Hdr];
   students.forEach(s => {
-    s2Data.push([s.id, s.name, s.class, ...s.scores, s.totalScore, s.score10, s.excellentCount, s.passCount, s.failCount, s.strongStds.join(", "), s.weakStds.join(", "), s.improveStds.join(", "), s.risk, s.evaluation]);
+    s2Data.push([s.id, s.name, s.class, ...s.scores, s.totalScore, s.excellentCount, s.passCount, s.failCount, s.strongStds.join(", "), s.weakStds.join(", "), s.improveStds.join(", "), s.risk, s.evaluation]);
   });
   const ws2 = XLSX.utils.aoa_to_sheet(s2Data);
   ws2["!cols"] = [{ wch: 10 }, { wch: 18 }, { wch: 8 }, ...STANDARDS.map(() => ({ wch: 5 })), { wch: 10 }, { wch: 10 }, { wch: 10 }, { wch: 8 }, { wch: 8 }, { wch: 22 }, { wch: 22 }, { wch: 22 }, { wch: 12 }, { wch: 50 }];
@@ -2091,14 +2092,14 @@ function exportExcelFromComputed() {
   // Sheet 3 — Weak Students (colored)
   // ═══════════════════════════════════════
   const weak = students.filter(s => s.score10 < 5 || s.failCount >= 4);
-  const s3Hdr = ["Mã HS", "Họ và Tên", "Tổng Điểm", "Điểm /10", "Chuẩn Yếu", "Số Chuẩn Không Đạt", "Mức Nguy Cơ", "Gợi Ý Can Thiệp"];
+  const s3Hdr = ["Mã HS", "Họ và Tên", "Tổng Điểm", "Chuẩn Yếu", "Số Chuẩn Không Đạt", "Mức Nguy Cơ", "Gợi Ý Can Thiệp"];
   const s3Data = [s3Hdr];
   weak.forEach(s => {
     let intervention;
     if (s.risk === "Cao") intervention = "Tổ chức ôn tập nền tảng và kèm cặp một-một.";
     else if (s.failCount >= 6) intervention = "Giao bài tập có hướng dẫn tập trung vào các chuẩn cốt lõi.";
     else intervention = "Củng cố các điểm yếu bằng bài tập bổ sung và học nhóm.";
-    s3Data.push([s.id, s.name, s.totalScore, s.score10, s.weakStds.join(", "), s.failCount, s.risk, intervention]);
+    s3Data.push([s.id, s.name, s.totalScore, s.weakStds.join(", "), s.failCount, s.risk, intervention]);
   });
   const ws3 = XLSX.utils.aoa_to_sheet(s3Data);
   ws3["!cols"] = [{ wch: 10 }, { wch: 18 }, { wch: 10 }, { wch: 10 }, { wch: 26 }, { wch: 18 }, { wch: 14 }, { wch: 50 }];
@@ -2163,9 +2164,8 @@ function generateStudentPDFFromAPI(studentRow) {
   const name     = studentRow["Họ và tên"]   || studentRow["name"]  || "—";
   const maHS     = studentRow["Mã HS"]        || studentRow["id"]    || "—";
   const lop      = studentRow["Lớp"]          || studentRow["class"] || "—";
-  // Điểm: API trả "Score (10)", "Tổng điểm" có thể null
-  const tongDiem = studentRow["Tổng điểm"] ?? studentRow["Tổng điểm thô"] ?? studentRow["tong_diem"] ?? "—";
-  const diem10   = studentRow["Score (10)"] ?? studentRow["Điểm thang 10"] ?? studentRow["Điểm quy đổi thang 10"] ?? studentRow["diem_10"] ?? "—";
+  // Điểm: dùng Tổng điểm
+  const tongDiem = studentRow["Tổng điểm"] ?? studentRow["tong_diem"] ?? "—";
   // Số câu: API trả "Excellent", "Pass", "Fail" (không có prefix "Số")
   const soExc    = studentRow["Excellent"]    ?? studentRow["Số Excellent"]    ?? studentRow["Số câu Xuất sắc"] ?? "0";
   const soPass   = studentRow["Pass"]         ?? studentRow["Số câu Pass"]     ?? studentRow["Số câu Đạt"]    ?? "0";
@@ -2210,7 +2210,7 @@ function generateStudentPDFFromAPI(studentRow) {
   doc.text(v(name), M, y); y += 8;
   setF("normal", 10);
   doc.setTextColor(100);
-  doc.text(`Ma HS: ${v(maHS)}    |    Lop: ${v(lop)}    |    Tong diem: ${tongDiem !== null && tongDiem !== "—" ? v(tongDiem) : "N/A"}    |    Diem thang 10: ${v(diem10)}`, M, y); y += 5;
+  doc.text(`Ma HS: ${v(maHS)}    |    Lop: ${v(lop)}    |    Tong diem: ${v(tongDiem)}`, M, y); y += 5;
   doc.text(`Muc nguy co: ${v(risk)}    |    Xuat sac: ${v(soExc)}    |    Dat: ${v(soPass)}    |    Khong dat: ${v(soFail)}`, M, y); y += 5;
   if (manhStr) { y = wrap(`Chuan manh: ${manhStr}`, M, y, W - M * 2, 4.5); }
   if (yeuStr)  { y = wrap(`Chuan yeu: ${yeuStr}`,  M, y, W - M * 2, 4.5); }
