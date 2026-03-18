@@ -286,10 +286,16 @@ const mockSheet4Data = [
 ];
 
 // ─── API RESPONSE DATA (from webhook) ──────────────────────
-let apiSheet1Data = [];
-let apiSheet2Data = [];
-let apiSheet3Data = [];
 let apiSheet4Data = [];
+
+// ─── RESET STATE ──────────────────────────────────────────
+function resetAPIState() {
+  console.log("🔄 Resetting API state...");
+  apiSheet1Data = [];
+  apiSheet2Data = [];
+  apiSheet3Data = [];
+  apiSheet4Data = [];
+}
 
 // ─── COMPUTED DATA ──────────────────────────────────────────
 let students = [];
@@ -357,13 +363,18 @@ function getRiskBadgeClass(risk) {
 
 // ─── API: POST parsed data & receive response ────────────────
 async function postDataToAPI(parsedData) {
-  showSpinner(true);
+  const controller = new AbortController();
+  // Set timeout to 5 minutes (300,000 ms)
+  const timeoutId = setTimeout(() => controller.abort(), 300000);
+
   try {
     const res = await fetch("http://localhost:5678/webhook/demo", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(parsedData)
+      body: JSON.stringify(parsedData),
+      signal: controller.signal
     });
+    clearTimeout(timeoutId);
     if (!res.ok) throw new Error(`HTTP ${res.status}: ${res.statusText}`);
 
     const raw = await res.text();
@@ -394,12 +405,36 @@ async function postDataToAPI(parsedData) {
     processAPIResponse(arr);
     return true;
   } catch (err) {
-    console.error("API error:", err);
-    fileInfo.textContent = `❌ Gửi dữ liệu thất bại: ${err.message}. Vui lòng thử lại.`;
+    clearTimeout(timeoutId);
+    console.group("❌ API Error Details");
+    console.error("Error name:", err.name);
+    console.error("Error message:", err.message);
+    if (err.stack) console.error("Stack trace:", err.stack);
+    console.groupEnd();
+
+    let errMsg = `Gửi dữ liệu thất bại: ${err.message}`;
+    if (err.name === 'AbortError') {
+      errMsg = `Quá thời gian chờ (5 phút). Vui lòng kiểm tra lại server.`;
+    }
+
+    fileInfo.textContent = `❌ ${errMsg}. Vui lòng thử lại.`;
     fileInfo.className = "file-info error";
+
+    // Stop progress bar and show error status instead of just closing
+    if (window._progressInterval) {
+      clearInterval(window._progressInterval);
+      const statusText = document.getElementById("processing-status");
+      if (statusText) {
+        statusText.textContent = "Lỗi: " + errMsg;
+        statusText.style.color = "var(--danger)";
+      }
+      // Wait a bit before closing so user can read the error
+      setTimeout(() => {
+        overlay.classList.remove("active");
+        if (statusText) statusText.style.color = ""; // reset color
+      }, 4000);
+    }
     return false;
-  } finally {
-    showSpinner(false);
   }
 }
 
@@ -538,14 +573,15 @@ function handleFile(file) {
 }
 
 btnUpload.addEventListener("click", () => {
+  resetAPIState(); // Clear any old data
   if (!selectedFile) {
     fileInfo.textContent = "📄 Đang dùng dữ liệu mẫu…";
     fileInfo.className = "file-info success";
     students = computeStudents(rawStudents);
     _lastParsedData = rawStudents;
-    // Inject mock Sheet 4 để hiển thị tab Phân Tích Lớp ngay cả khi API chưa trả Sheet 4
     apiSheet4Data = mockSheet4Data;
-    postDataToAPI(rawStudents).then(ok => { if (ok) startProcessing(); });
+    startProcessing();
+    postDataToAPI(rawStudents);
     return;
   }
   parseFile(selectedFile);
@@ -694,7 +730,10 @@ function parseFile(file) {
       fileInfo.textContent = `✅ Đã tải ${students.length} học sinh, ${stdCols.length} chuẩn.`;
       fileInfo.className = "file-info success";
       _lastParsedData = rawPayload;
-      postDataToAPI(rawPayload).then(ok => { if (ok) startProcessing(); });
+      
+      resetAPIState(); // Ensure API state is fresh
+      startProcessing();
+      postDataToAPI(rawPayload);
     } catch (err) { fileInfo.textContent = "❌ Lỗi: " + err.message; fileInfo.className = "file-info error"; }
   };
   reader.readAsArrayBuffer(file);
@@ -702,15 +741,64 @@ function parseFile(file) {
 
 // ─── PROCESSING ─────────────────────────────────────────────
 function startProcessing() {
+  const overlay = document.getElementById("processing-overlay");
+  const progressFill = document.getElementById("progress-fill");
+  const progressPercent = document.getElementById("progress-percent");
+  const statusText = document.getElementById("processing-status");
+
   overlay.classList.add("active");
   progressFill.style.width = "0%";
+  if (progressPercent) progressPercent.textContent = "0%";
+  
   let p = 0;
-  const iv = setInterval(() => {
-    p += Math.random() * 16 + 5;
-    if (p > 100) p = 100;
-    progressFill.style.width = p + "%";
-    if (p >= 100) { clearInterval(iv); setTimeout(() => { overlay.classList.remove("active"); showPage("dashboard"); renderAll(); }, 350); }
-  }, 180);
+  let startTime = Date.now();
+  const targetTime = 150000; // 2m 30s in ms
+
+  const messages = [
+    "Đang khởi tạo kết nối...",
+    "Đang tải lên dữ liệu học sinh...",
+    "Đang phân tích các tiêu chuẩn (C1-C13)...",
+    "Trí tuệ nhân tạo đang đánh giá năng lực...",
+    "Đang tổng hợp báo cáo chi tiết...",
+    "Đang chuẩn bị bảng điều khiển...",
+    "Sắp hoàn tất, vui lòng giữ kết nối..."
+  ];
+
+  // Clear any existing interval
+  if (window._progressInterval) clearInterval(window._progressInterval);
+
+  window._progressInterval = setInterval(() => {
+    const elapsed = Date.now() - startTime;
+
+    // If data is already received, jump to 100% fast
+    if (apiSheet1Data.length > 0 || apiSheet2Data.length > 0) {
+       p += 5;
+       if (p >= 100) {
+         p = 100;
+         if (progressFill) progressFill.style.width = "100%";
+         if (progressPercent) progressPercent.textContent = "100%";
+         if (statusText) statusText.textContent = "Hoàn tất!";
+         
+         clearInterval(window._progressInterval);
+         setTimeout(() => { 
+           overlay.classList.remove("active"); 
+           showPage("dashboard"); 
+           renderAll(); 
+         }, 500);
+       }
+    } else {
+       // While waiting, calculate progress based on time
+       // Limit to 98% until data is received
+       p = Math.min(98, (elapsed / targetTime) * 100);
+       
+       // Update status message based on progress
+       const msgIndex = Math.min(messages.length - 1, Math.floor((p / 100) * messages.length));
+       if (statusText) statusText.textContent = messages[msgIndex];
+    }
+
+    if (progressFill) progressFill.style.width = p.toFixed(1) + "%";
+    if (progressPercent) progressPercent.textContent = Math.floor(p) + "%";
+  }, 100);
 }
 
 // ─── RENDER ALL ─────────────────────────────────────────────
@@ -2543,6 +2631,20 @@ document.getElementById("btn-export-all-pdf").addEventListener("click", () => {
     setTimeout(next, 350);
   }
   next();
+});
+
+// ─── STARTUP LOG ────────────────────────────────────────────
+console.log("%c🚀 Application Started / Reloaded", "color: #2e86c1; font-weight: bold; font-size: 14px;");
+console.log("Time:", new Date().toLocaleTimeString());
+
+// ─── RELOAD PROTECTION ──────────────────────────────────────
+window.addEventListener('beforeunload', (e) => {
+  // Check if we are in the middle of processing
+  const overlay = document.getElementById("processing-overlay");
+  if (overlay && overlay.classList.contains("active")) {
+    e.preventDefault();
+    e.returnValue = ''; // Standard way to show confirmation dialog
+  }
 });
 
 // ─── INIT ───────────────────────────────────────────────────
