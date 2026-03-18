@@ -362,78 +362,80 @@ function getRiskBadgeClass(risk) {
 }
 
 // ─── API: POST parsed data & receive response ────────────────
-async function postDataToAPI(parsedData) {
-  const controller = new AbortController();
-  // Set timeout to 5 minutes (300,000 ms)
-  const timeoutId = setTimeout(() => controller.abort(), 300000);
-
+async function fetchData() {
   try {
-    const res = await fetch("http://localhost:5678/webhook/demo", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(parsedData),
-      signal: controller.signal
+    showSpinner(true);
+    const res = await fetch("/api/report", {
+      method: "GET",
+      headers: { "Content-Type": "application/json" }
     });
-    clearTimeout(timeoutId);
-    if (!res.ok) throw new Error(`HTTP ${res.status}: ${res.statusText}`);
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    let data = await res.json();
+    await handleData(data);
+    showSpinner(false);
+    renderAll();
+  } catch (err) {
+    console.error("Fetch Error:", err);
+    showSpinner(false);
+    alert("API Error: " + err.message);
+  }
+}
 
-    const raw = await res.text();
-    console.log("📥 API raw response:", raw);
-
-    let json;
-    try { json = JSON.parse(raw); } catch(e) { throw new Error("Phản hồi không phải JSON hợp lệ: " + raw.slice(0, 200)); }
-
-    // Chuẩn hóa: chấp nhận array hoặc object có key "data"/"result"/"output"
-    let arr;
-    if (Array.isArray(json)) {
-      arr = json;
-    } else if (json && Array.isArray(json.data)) {
-      arr = json.data;
-    } else if (json && Array.isArray(json.result)) {
-      arr = json.result;
-    } else if (json && Array.isArray(json.output)) {
-      arr = json.output;
-    } else if (json && typeof json === "object") {
-      // Có thể là object đơn lẻ (1 sheet) hoặc object chứa sheets
-      // Thử bọc thành array
-      arr = [json];
-    } else {
-      throw new Error("Định dạng phản hồi không nhận dạng được: " + JSON.stringify(json).slice(0, 200));
+function handleData(data) {
+  apiSheet1Data = [];
+  apiSheet4Data = [];
+  
+  let arr = Array.isArray(data) ? data : (data ? [data] : []);
+  
+  arr.forEach(item => {
+    if (!item || typeof item !== "object") return;
+    
+    if (item.standard_code) {
+      renderSheet1(item);
+    } else if (item.class_name) {
+      renderSheet4(item);
     }
+  });
+}
 
-    console.log("✅ API parsed array:", arr);
-    processAPIResponse(arr);
+function renderSheet1(item) {
+  if (item.standard_code === null || item.standard_code === undefined) return;
+  apiSheet1Data.push({
+    standard_code: item.standard_code || "",
+    số_học_sinh: item.số_học_sinh || 0,
+    số_học_sinh_rớt: item.số_học_sinh_rớt || 0,
+    số_học_sinh_đạt: item.số_học_sinh_đạt || 0,
+    số_học_sinh_đạt_điểm_4: item.số_học_sinh_đạt_điểm_4 || 0,
+    tỉ_lệ_fail: item.tỉ_lệ_fail || 0,
+    tỉ_lệ_pass: item.tỉ_lệ_pass || 0,
+    tỉ_lệ_excellent: item.tỉ_lệ_excellent || 0,
+    tỉ_lệ_cần_cải_thiện: item.tỉ_lệ_cần_cải_thiện || 0,
+    nhan_xet: item.nhan_xet || ""
+  });
+}
+
+function renderSheet4(item) {
+  if (item.class_name === null || item.class_name === undefined) return;
+  apiSheet4Data.push({
+    class_name: item.class_name || "",
+    so_hoc: item.so_hoc || "",
+    tu_duy_toan: item.tu_duy_toan || "",
+    xep_loai: item.xep_loai || ""
+  });
+}
+
+async function postDataToAPI(parsedData) {
+  try {
+    const res = await fetch("/api/report", {
+      method: "GET",
+      headers: { "Content-Type": "application/json" }
+    });
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    let data = await res.json();
+    await handleData(data);
     return true;
   } catch (err) {
-    clearTimeout(timeoutId);
-    console.group("❌ API Error Details");
-    console.error("Error name:", err.name);
-    console.error("Error message:", err.message);
-    if (err.stack) console.error("Stack trace:", err.stack);
-    console.groupEnd();
-
-    let errMsg = `Gửi dữ liệu thất bại: ${err.message}`;
-    if (err.name === 'AbortError') {
-      errMsg = `Quá thời gian chờ (5 phút). Vui lòng kiểm tra lại server.`;
-    }
-
-    fileInfo.textContent = `❌ ${errMsg}. Vui lòng thử lại.`;
-    fileInfo.className = "file-info error";
-
-    // Stop progress bar and show error status instead of just closing
-    if (window._progressInterval) {
-      clearInterval(window._progressInterval);
-      const statusText = document.getElementById("processing-status");
-      if (statusText) {
-        statusText.textContent = "Lỗi: " + errMsg;
-        statusText.style.color = "var(--danger)";
-      }
-      // Wait a bit before closing so user can read the error
-      setTimeout(() => {
-        overlay.classList.remove("active");
-        if (statusText) statusText.style.color = ""; // reset color
-      }, 4000);
-    }
+    console.error("API Error:", err);
     return false;
   }
 }
