@@ -716,6 +716,87 @@ th.sortable:hover {
   line-height: 1.4
 }
 
+/* ─── Sheet 4: Class Cards ─── */
+.sheet4-container {
+  margin-top: 18px;
+}
+
+.sheet4-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+  gap: 16px;
+}
+
+.sheet4-card {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  box-shadow: 0 4px 14px rgba(15, 23, 42, 0.06);
+  transition: transform .2s ease, box-shadow .2s ease, border-color .2s ease;
+  overflow: hidden;
+}
+
+.sheet4-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 22px rgba(15, 23, 42, 0.10);
+  border-color: #d7e1ee;
+}
+
+.sheet4-card-header {
+  padding: 14px 16px;
+  border-bottom: 1px solid var(--border);
+  background: linear-gradient(180deg, #f8fbff 0%, #f3f7fc 100%);
+}
+
+.sheet4-card-title {
+  margin: 0;
+  font-size: 1rem;
+  line-height: 1.35;
+  font-weight: 700;
+  color: var(--text);
+}
+
+.sheet4-card-body {
+  padding: 14px 16px 16px;
+  display: grid;
+  gap: 12px;
+}
+
+.sheet4-section {
+  background: #fafbfd;
+  border: 1px solid #e7edf5;
+  border-radius: 10px;
+  padding: 10px 12px;
+}
+
+.sheet4-section-title {
+  margin: 0 0 6px;
+  font-size: .82rem;
+  font-weight: 700;
+  letter-spacing: .02em;
+  color: #38536d;
+  text-transform: uppercase;
+}
+
+.sheet4-section-content {
+  margin: 0;
+  font-size: .93rem;
+  line-height: 1.55;
+  color: var(--text-light);
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.sheet4-empty {
+  border: 1px dashed #cfd8e3;
+  border-radius: 12px;
+  background: #f9fbfe;
+  color: #60758d;
+  font-size: .95rem;
+  padding: 20px;
+  text-align: center;
+}
+
 /* Highlight row */
 tr.row-danger {
   background: rgba(231, 76, 60, 0.06) !important
@@ -796,5 +877,9 @@ td.cell-danger {
 
   .search-input {
     width: 100%
+  }
+
+  .sheet4-grid {
+    grid-template-columns: 1fr;
   }
 }

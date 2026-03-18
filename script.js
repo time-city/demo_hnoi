@@ -362,80 +362,78 @@ function getRiskBadgeClass(risk) {
 }
 
 // ─── API: POST parsed data & receive response ────────────────
-async function fetchData() {
-  try {
-    showSpinner(true);
-    const res = await fetch("/api/report", {
-      method: "GET",
-      headers: { "Content-Type": "application/json" }
-    });
-    if (!res.ok) throw new Error(`HTTP ${res.status}`);
-    let data = await res.json();
-    await handleData(data);
-    showSpinner(false);
-    renderAll();
-  } catch (err) {
-    console.error("Fetch Error:", err);
-    showSpinner(false);
-    alert("API Error: " + err.message);
-  }
-}
-
-function handleData(data) {
-  apiSheet1Data = [];
-  apiSheet4Data = [];
-  
-  let arr = Array.isArray(data) ? data : (data ? [data] : []);
-  
-  arr.forEach(item => {
-    if (!item || typeof item !== "object") return;
-    
-    if (item.standard_code) {
-      renderSheet1(item);
-    } else if (item.class_name) {
-      renderSheet4(item);
-    }
-  });
-}
-
-function renderSheet1(item) {
-  if (item.standard_code === null || item.standard_code === undefined) return;
-  apiSheet1Data.push({
-    standard_code: item.standard_code || "",
-    số_học_sinh: item.số_học_sinh || 0,
-    số_học_sinh_rớt: item.số_học_sinh_rớt || 0,
-    số_học_sinh_đạt: item.số_học_sinh_đạt || 0,
-    số_học_sinh_đạt_điểm_4: item.số_học_sinh_đạt_điểm_4 || 0,
-    tỉ_lệ_fail: item.tỉ_lệ_fail || 0,
-    tỉ_lệ_pass: item.tỉ_lệ_pass || 0,
-    tỉ_lệ_excellent: item.tỉ_lệ_excellent || 0,
-    tỉ_lệ_cần_cải_thiện: item.tỉ_lệ_cần_cải_thiện || 0,
-    nhan_xet: item.nhan_xet || ""
-  });
-}
-
-function renderSheet4(item) {
-  if (item.class_name === null || item.class_name === undefined) return;
-  apiSheet4Data.push({
-    class_name: item.class_name || "",
-    so_hoc: item.so_hoc || "",
-    tu_duy_toan: item.tu_duy_toan || "",
-    xep_loai: item.xep_loai || ""
-  });
-}
-
 async function postDataToAPI(parsedData) {
+  const controller = new AbortController();
+  // Set timeout to 5 minutes (300,000 ms)
+  const timeoutId = setTimeout(() => controller.abort(), 300000);
+
   try {
-    const res = await fetch("/api/report", {
-      method: "GET",
-      headers: { "Content-Type": "application/json" }
+    const res = await fetch("http://localhost:5678/webhook/demo", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(parsedData),
+      signal: controller.signal
     });
-    if (!res.ok) throw new Error(`HTTP ${res.status}`);
-    let data = await res.json();
-    await handleData(data);
+    clearTimeout(timeoutId);
+    if (!res.ok) throw new Error(`HTTP ${res.status}: ${res.statusText}`);
+
+    const raw = await res.text();
+    console.log("📥 API raw response:", raw);
+
+    let json;
+    try { json = JSON.parse(raw); } catch(e) { throw new Error("Phản hồi không phải JSON hợp lệ: " + raw.slice(0, 200)); }
+
+    // Chuẩn hóa: chấp nhận array hoặc object có key "data"/"result"/"output"
+    let arr;
+    if (Array.isArray(json)) {
+      arr = json;
+    } else if (json && Array.isArray(json.data)) {
+      arr = json.data;
+    } else if (json && Array.isArray(json.result)) {
+      arr = json.result;
+    } else if (json && Array.isArray(json.output)) {
+      arr = json.output;
+    } else if (json && typeof json === "object") {
+      // Có thể là object đơn lẻ (1 sheet) hoặc object chứa sheets
+      // Thử bọc thành array
+      arr = [json];
+    } else {
+      throw new Error("Định dạng phản hồi không nhận dạng được: " + JSON.stringify(json).slice(0, 200));
+    }
+
+    console.log("✅ API parsed array:", arr);
+    processAPIResponse(arr);
     return true;
   } catch (err) {
-    console.error("API Error:", err);
+    clearTimeout(timeoutId);
+    console.group("❌ API Error Details");
+    console.error("Error name:", err.name);
+    console.error("Error message:", err.message);
+    if (err.stack) console.error("Stack trace:", err.stack);
+    console.groupEnd();
+
+    let errMsg = `Gửi dữ liệu thất bại: ${err.message}`;
+    if (err.name === 'AbortError') {
+      errMsg = `Quá thời gian chờ (5 phút). Vui lòng kiểm tra lại server.`;
+    }
+
+    fileInfo.textContent = `❌ ${errMsg}. Vui lòng thử lại.`;
+    fileInfo.className = "file-info error";
+
+    // Stop progress bar and show error status instead of just closing
+    if (window._progressInterval) {
+      clearInterval(window._progressInterval);
+      const statusText = document.getElementById("processing-status");
+      if (statusText) {
+        statusText.textContent = "Lỗi: " + errMsg;
+        statusText.style.color = "var(--danger)";
+      }
+      // Wait a bit before closing so user can read the error
+      setTimeout(() => {
+        overlay.classList.remove("active");
+        if (statusText) statusText.style.color = ""; // reset color
+      }, 4000);
+    }
     return false;
   }
 }
@@ -464,18 +462,81 @@ function processAPIResponse(responseArray) {
   const prevSheet4 = apiSheet4Data.slice();
   apiSheet4Data = [];
 
+  const adaptClassItem = (item) => {
+    if (!item || typeof item !== "object") return null;
+    if (Array.isArray(item)) return null;
+
+    return {
+      class_name: String(item.class_name || item.class || item["Lớp"] || "").trim() || "Lớp chưa đặt tên",
+      so_hoc: String(item.so_hoc || item.soHoc || item.so_hoc_sinh || item["số_học_sinh"] || item["Số học"] || "").trim() || "—",
+      tu_duy_toan: String(item.tu_duy_toan || item.tuDuyToan || item.tu_duy || "").trim() || "—",
+      xep_loai: String(item.xep_loai || item.xepLoai || "").trim() || "—"
+    };
+  };
+
+  const normalizeSheet4Rows = (input) => {
+    const rows = [];
+    const walk = (node) => {
+      if (Array.isArray(node)) {
+        node.forEach(walk);
+        return;
+      }
+      if (!node || typeof node !== "object") return;
+      rows.push(node);
+    };
+    walk(input);
+    return rows;
+  };
+
   responseArray.forEach(item => {
     const sheetNum = item["Sheets"] ?? item["sheets"] ?? item["sheet"];
     const data = item["data"] ?? [];
 
-    if (sheetNum == 1) apiSheet1Data = Array.isArray(data) ? data : [];
-    else if (sheetNum == 2) apiSheet2Data = Array.isArray(data) ? data : [];
-    else if (sheetNum == 3) apiSheet3Data = Array.isArray(data) ? data : [];
-    else if (sheetNum == 4) {
-      // Sheet 4: item.data là mảng các lớp — push từng lớp
-      const classes = Array.isArray(item.data) ? item.data : [item];
-      classes.forEach(cls => apiSheet4Data.push(cls));
+    if (sheetNum == 1) {
+      if (Array.isArray(data) && data.length) {
+        apiSheet1Data = data.map(r => ({
+          ...r,
+          suggestion: r.suggestion ?? r.Suggestion ?? r.nhan_xet ?? r["nhan_xet"] ?? ""
+        }));
+      } else if (item.standard_code) {
+        apiSheet1Data.push({
+          ...item,
+          suggestion: item.suggestion ?? item.Suggestion ?? item.nhan_xet ?? item["nhan_xet"] ?? ""
+        });
+      }
+    } else if (sheetNum == 2) {
+      apiSheet2Data = Array.isArray(data) ? data : [];
+    } else if (sheetNum == 3) {
+      apiSheet3Data = Array.isArray(data) ? data : [];
+    } else if (sheetNum == 4) {
+      const rawRows = normalizeSheet4Rows(item.data ?? item);
+      const classes = rawRows.filter(row =>
+        row.class_name ||
+        row.class ||
+        row["Lớp"] ||
+        row.so_hoc ||
+        row.so_hoc_sinh ||
+        row["số_học_sinh"] ||
+        row["Số học"] ||
+        row.tu_duy_toan ||
+        row.tu_duy ||
+        row.xep_loai ||
+        row.xepLoai
+      );
+      classes.map(adaptClassItem).filter(Boolean).forEach(cls => apiSheet4Data.push(cls));
       console.log("✅ Sheet 4 – số lớp thêm vào:", classes.length);
+    } else {
+      // Fallback cho payload không có field Sheets nhưng có dữ liệu trực tiếp
+      if (item.standard_code) {
+        apiSheet1Data.push({
+          ...item,
+          suggestion: item.suggestion ?? item.Suggestion ?? item.nhan_xet ?? item["nhan_xet"] ?? ""
+        });
+      }
+      if (item.class_name || item.so_hoc || item.tu_duy_toan || item.xep_loai) {
+        const cls = adaptClassItem(item);
+        if (cls) apiSheet4Data.push(cls);
+      }
     }
   });
 
@@ -872,7 +933,7 @@ function renderSheet1Tab() {
       <td class="${isDanger ? "cell-danger" : ""}">${failRate}%</td>
       <td>${row["tỉ_lệ_pass"] || row["ti_le_pass"] || row["Tỉ lệ Pass"] || "—"}%</td>
       <td>${row["tỉ_lệ_excellent"] || row["ti_le_excellent"] || row["Tỉ lệ Excellent"] || "—"}%</td>
-      <td class="eval-text">${row["suggestion"] || row["Suggestion"] || "—"}</td>
+      <td class="eval-text">${row["suggestion"] || row["Suggestion"] || row["nhan_xet"] || "—"}</td>
     `;
     tbody.appendChild(tr);
   });
@@ -1347,353 +1408,97 @@ function levelBadge(lv) {
 }
 
 function renderSheet4Tab() {
-  const container = document.getElementById("tab-class");
-  if (!container) return;
+  const tabClass = document.getElementById("tab-class");
+  if (!tabClass) return;
 
-  const pageTitle = container.querySelector(".page-title");
-  container.innerHTML = "";
-  if (pageTitle) container.appendChild(pageTitle);
+  const host = tabClass.querySelector("#sheet4-container") || (() => {
+    const node = document.createElement("div");
+    node.id = "sheet4-container";
+    node.className = "sheet4-container";
+    tabClass.appendChild(node);
+    return node;
+  })();
 
-  if (!apiSheet4Data.length) {
-    container.insertAdjacentHTML("beforeend", `
-      <div class="summary-cards fade-in" id="class-summary-cards">
-        <p style="color:#888;padding:16px;">⏳ Chưa có dữ liệu phân tích lớp từ API.</p>
-      </div>`);
+  host.replaceChildren();
+
+  const source = Array.isArray(apiSheet4Data) ? apiSheet4Data : [];
+  const classes = source
+    .filter(item => item && typeof item === "object")
+    .map(item => normalizeSheet4ClassItem(item))
+    .filter(item => item.class_name || item.so_hoc || item.tu_duy_toan || item.xep_loai);
+
+  if (!classes.length) {
+    const empty = document.createElement("div");
+    empty.className = "sheet4-empty";
+    empty.textContent = "⏳ Chưa có dữ liệu phân tích lớp từ API.";
+    host.appendChild(empty);
     return;
   }
 
-  // ── Thanh tìm kiếm + bộ đếm ───────────────────────────────
-  container.insertAdjacentHTML("beforeend", `
-    <div style="display:flex;align-items:center;gap:12px;margin-bottom:20px;flex-wrap:wrap;">
-      <div style="position:relative;flex:1;min-width:220px;max-width:400px;">
-        <span style="position:absolute;left:12px;top:50%;transform:translateY(-50%);font-size:15px;pointer-events:none;">🔍</span>
-        <input id="sheet4-search" type="text" placeholder="Tìm kiếm theo tên lớp…"
-          style="width:100%;box-sizing:border-box;padding:10px 14px 10px 38px;border:1.5px solid #d0d7de;border-radius:8px;font-size:14px;outline:none;transition:border .2s;"
-          oninput="filterSheet4Classes()"
-          onfocus="this.style.borderColor='#2E86C1'"
-          onblur="this.style.borderColor='#d0d7de'">
-      </div>
-      <span id="sheet4-count" style="font-size:13px;color:#666;white-space:nowrap;">
-        ${apiSheet4Data.length} lớp
-      </span>
-      <button onclick="document.getElementById('sheet4-search').value='';filterSheet4Classes();"
-        style="padding:8px 16px;border:1.5px solid #d0d7de;border-radius:8px;background:#fff;font-size:13px;color:#555;cursor:pointer;">
-        ✕ Xóa
-      </button>
-    </div>
-    <div id="sheet4-classes-wrapper"></div>
-  `);
+  const grid = document.createElement("div");
+  grid.className = "sheet4-grid";
 
-  // Render tất cả lớp vào wrapper
-  renderSheet4Classes(apiSheet4Data);
-}
-
-// ── Lọc lớp theo từ khóa ──────────────────────────────────
-function filterSheet4Classes() {
-  const keyword = (document.getElementById("sheet4-search")?.value || "").trim().toLowerCase();
-  const filtered = keyword
-    ? apiSheet4Data.filter(item => {
-        const name = (item.class_name || "").toLowerCase();
-        return name.includes(keyword);
-      })
-    : apiSheet4Data;
-  const countEl = document.getElementById("sheet4-count");
-  if (countEl) countEl.textContent = `${filtered.length} / ${apiSheet4Data.length} lớp`;
-  renderSheet4Classes(filtered);
-}
-
-// ── Render danh sách lớp ──────────────────────────────────
-// ── Biến lưu lớp đang chọn ───────────────────────────────
-let _sheet4ActiveIdx = 0;
-
-function renderSheet4Classes(dataArr) {
-  const wrapper = document.getElementById("sheet4-classes-wrapper");
-  if (!wrapper) return;
-  wrapper.innerHTML = "";
-
-  if (!dataArr.length) {
-    wrapper.innerHTML = `<div style="padding:32px;text-align:center;color:#aaa;font-size:15px;">🔍 Không tìm thấy lớp phù hợp.</div>`;
-    return;
-  }
-
-  // ── Hàng nút lớp ─────────────────────────────────────────
-  const btnBar = document.createElement("div");
-  btnBar.id = "sheet4-btn-bar";
-  btnBar.style.cssText = "display:flex;flex-wrap:wrap;gap:8px;margin-bottom:20px;";
-
-  dataArr.forEach((s4, idx) => {
-    const smr   = s4.summary || {};
-    const name  = s4.class_name || `Lớp ${idx+1}`;
-    const level = smr.level || "";
-    const levelColors = {
-      "Xuất sắc":"#1D6A39","Tốt":"#1D6A39","Khá":"#7E5109",
-      "Trung bình":"#7E5109","Yếu":"#C0392B","Kém":"#C0392B"
-    };
-    const lc = levelColors[level] || "#2E86C1";
-
-    const btn = document.createElement("button");
-    btn.id = `sheet4-btn-${idx}`;
-    btn.textContent = name;
-    btn.style.cssText = `padding:8px 16px;border-radius:20px;border:2px solid ${lc};background:#fff;color:${lc};font-size:13px;font-weight:600;cursor:pointer;transition:all .18s;`;
-    btn.onmouseenter = () => { if (btn.dataset.active !== "1") { btn.style.background = lc + "18"; } };
-    btn.onmouseleave = () => { if (btn.dataset.active !== "1") { btn.style.background = "#fff"; } };
-    btn.onclick = () => showSheet4Class(dataArr, idx);
-    btnBar.appendChild(btn);
-  });
-  wrapper.appendChild(btnBar);
-
-  // ── Vùng chi tiết lớp ────────────────────────────────────
-  const detailPanel = document.createElement("div");
-  detailPanel.id = "sheet4-detail-panel";
-  wrapper.appendChild(detailPanel);
-
-  // Hiện lớp đầu tiên mặc định
-  showSheet4Class(dataArr, 0);
-}
-
-// ── Hiển thị chi tiết 1 lớp ──────────────────────────────
-function showSheet4Class(dataArr, idx) {
-  _sheet4ActiveIdx = idx;
-
-  // Cập nhật trạng thái nút
-  dataArr.forEach((_, i) => {
-    const btn = document.getElementById(`sheet4-btn-${i}`);
-    if (!btn) return;
-    const smr   = dataArr[i].summary || {};
-    const level = smr.level || "";
-    const lc = { "Xuất sắc":"#1D6A39","Tốt":"#1D6A39","Khá":"#7E5109","Trung bình":"#7E5109","Yếu":"#C0392B","Kém":"#C0392B" }[level] || "#2E86C1";
-    if (i === idx) {
-      btn.dataset.active = "1";
-      btn.style.background = lc;
-      btn.style.color = "#fff";
-      btn.style.boxShadow = `0 3px 10px ${lc}55`;
-    } else {
-      btn.dataset.active = "0";
-      btn.style.background = "#fff";
-      btn.style.color = lc;
-      btn.style.boxShadow = "none";
-    }
+  classes.forEach((item, index) => {
+    grid.appendChild(createSheet4ClassCard(item, index));
   });
 
-  const s4      = dataArr[idx];
-  const smr     = s4.summary   || {};
-  const hist    = s4.histogram || {};
-  const className     = s4.class_name            || `Lớp ${idx+1}`;
-  const totalStudents = smr.total_students       ?? 0;
-  const avgScore      = smr.avg_score            ?? "—";
-  const belowPct      = smr.below_avg_percent    ?? "—";
-  const level         = smr.level                || "—";
-  const maxScore      = smr.max_score            ?? "—";
-  const minScore      = smr.min_score            ?? "—";
-  const hardestQ      = s4.hardest_question      || {};
-  const easiestQ      = s4.easiest_question      || {};
-  const insights      = s4.insights              || [];
-  const actions       = s4.action_plan           || [];
-
-  const panel = document.getElementById("sheet4-detail-panel");
-  if (!panel) return;
-
-  panel.innerHTML = `
-    <div class="fade-in" style="border:1.5px solid #e0e7ef;border-radius:14px;overflow:hidden;box-shadow:0 2px 12px rgba(0,0,0,0.07);">
-      <div style="padding:16px 22px;background:linear-gradient(135deg,#1A5276,#2E86C1);display:flex;align-items:center;gap:12px;flex-wrap:wrap;">
-        <span style="font-size:20px;">🏫</span>
-        <span style="font-size:17px;font-weight:700;color:#fff;">${className}</span>
-        ${levelBadge(level)}
-        <span style="margin-left:auto;color:#AED6F1;font-size:13px;">
-          👥 ${totalStudents} HS &nbsp;|&nbsp; ĐTB: <b style="color:#fff;">${avgScore} / ${maxScore}</b> &nbsp;|&nbsp;
-          Dưới TB: <b style="color:${parseFloat(belowPct)>30?"#F1948A":"#A9DFBF"};">${belowPct}%</b>
-        </span>
-      </div>
-      <div style="padding:20px;">
-        ${buildClassBody(s4, hist, className, totalStudents, avgScore, belowPct, level, maxScore, minScore, "—", hardestQ, easiestQ, "", insights, actions)}
-      </div>
-    </div>
-  `;
+  host.appendChild(grid);
 }
 
-// ── Toggle collapse lớp ──────────────────────────────────
-// ── Build nội dung chi tiết 1 lớp ────────────────────────
-// s4 = object lớp trực tiếp từ API; hist = s4.histogram; các tham số còn lại đã extract sẵn
-function buildClassBody(s4, hist, className, totalStudents, avgScore, belowPct, level, maxScore, minScore, belowCount, hardestQ, easiestQ, summary, insights, actions) {
-  let html = "";
+function normalizeSheet4ClassItem(item) {
+  const className = String(item.class_name || item.class || item["Lớp"] || "").trim();
+  const soHocText = String(item.so_hoc || item.soHoc || item.so_hoc_sinh || item["số_học_sinh"] || item["Số học"] || "").trim();
+  const tuDuyText = String(item.tu_duy_toan || item.tuDuyToan || item.tu_duy || "").trim();
+  const xepLoaiText = String(item.xep_loai || item.xepLoai || "").trim();
 
-  // Chuẩn hoá insights: thay /N sai thành /maxScore thực tế
-  const fixScore = maxScore && maxScore !== "—"
-    ? txt => String(txt).replace(/\/\d+/g, `/${maxScore}`)
-    : txt => txt;
+  return {
+    class_name: className || "Lớp chưa đặt tên",
+    so_hoc: soHocText || "—",
+    tu_duy_toan: tuDuyText || "—",
+    xep_loai: xepLoaiText || "—"
+  };
+}
 
-  // Nhận xét tổng thể
-  if (summary || insights.length) {
-    const insightList = insights.map(t => `<li style="margin-bottom:5px;font-size:13.5px;color:#2c3e50;">${fixScore(t)}</li>`).join("");
-    html += `
-      <div style="margin-bottom:16px;background:#EBF5FB;border-left:4px solid #2E86C1;border-radius:0 8px 8px 0;padding:14px 16px;">
-        <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px;">
-          <span style="font-size:13px;font-weight:600;color:#1a5276;text-transform:uppercase;letter-spacing:.5px;">💬 Nhận Xét Tổng Thể</span>
-          ${levelBadge(level)}
-        </div>
-        ${summary ? `<p style="margin:0 0 10px;font-size:14px;color:#2c3e50;font-weight:600;">${summary}</p>` : ""}
-        ${insightList ? `<ul style="margin:0;padding-left:20px;">${insightList}</ul>` : ""}
-      </div>`;
-  }
+function createSheet4Section(title, content) {
+  const section = document.createElement("section");
+  section.className = "sheet4-section";
 
-  // Thống kê + câu khó/dễ
-  html += `
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px;">
-      <div class="table-card" style="padding:14px;">
-        <div style="font-size:12px;font-weight:600;color:#5d6d7e;margin-bottom:10px;text-transform:uppercase;">📋 Thống Kê Lớp</div>
-        <table style="width:100%;border-collapse:collapse;font-size:13px;">
-          <tbody>
-            <tr><td style="padding:5px 8px;color:#555;">Điểm TB</td><td style="padding:5px 8px;font-weight:700;text-align:right;">${avgScore}</td></tr>
-            <tr style="background:#f8f9fa;"><td style="padding:5px 8px;color:#555;">Điểm cao nhất</td><td style="padding:5px 8px;font-weight:700;text-align:right;color:#1D6A39;">${maxScore}</td></tr>
-            <tr><td style="padding:5px 8px;color:#555;">Điểm thấp nhất</td><td style="padding:5px 8px;font-weight:700;text-align:right;color:#C0392B;">${minScore}</td></tr>
-            <tr style="background:#f8f9fa;"><td style="padding:5px 8px;color:#555;">Dưới TB</td><td style="padding:5px 8px;font-weight:700;text-align:right;">${belowCount} HS (${belowPct}%)</td></tr>
-            <tr><td style="padding:5px 8px;color:#555;">Xếp loại lớp</td><td style="padding:5px 8px;text-align:right;">${levelBadge(level)}</td></tr>
-          </tbody>
-        </table>
-      </div>
-      <div class="table-card" style="padding:14px;">
-        <div style="font-size:12px;font-weight:600;color:#5d6d7e;margin-bottom:10px;text-transform:uppercase;">❓ Câu Hỏi Đặc Biệt</div>
-        <div style="background:#FADBD8;border-radius:8px;padding:10px 14px;margin-bottom:10px;">
-          <div style="font-size:11px;color:#C0392B;font-weight:600;margin-bottom:3px;">🔴 KHÓ NHẤT</div>
-          <div style="font-size:15px;font-weight:700;color:#C0392B;">${hardestQ.question || "—"}</div>
-          <div style="font-size:12px;color:#666;">ĐTB: ${hardestQ.avg_score ?? "—"}</div>
-        </div>
-        <div style="background:#D5F5E3;border-radius:8px;padding:10px 14px;">
-          <div style="font-size:11px;color:#1D6A39;font-weight:600;margin-bottom:3px;">🟢 DỄ NHẤT</div>
-          <div style="font-size:15px;font-weight:700;color:#1D6A39;">${easiestQ.question || "—"}</div>
-          <div style="font-size:12px;color:#666;">ĐTB: ${easiestQ.avg_score ?? "—"}</div>
-        </div>
-      </div>
-    </div>`;
+  const heading = document.createElement("h3");
+  heading.className = "sheet4-section-title";
+  heading.textContent = title;
 
-  // Histogram
-  const histRanges = hist.ranges || [];
-  const histCounts = hist.counts || [];
-  if (histRanges.length && histCounts.length) {
-    const histTotal = histCounts.reduce((s, v) => s + (parseInt(v)||0), 0) || 1;
-    const barColors = ["#E74C3C","#E67E22","#F1C40F","#2ECC71","#2E86C1"];
-    const bars = histRanges.map((range, i) => {
-      const cnt = parseInt(histCounts[i] || 0);
-      const pct = Math.round((cnt / histTotal) * 100);
-      return `
-        <div style="margin-bottom:7px;display:flex;align-items:center;gap:8px;">
-          <span style="width:44px;font-size:12px;font-weight:600;color:#555;">${range}</span>
-          <div style="flex:1;background:#eee;border-radius:5px;height:16px;overflow:hidden;">
-            <div style="width:${pct}%;background:${barColors[i]||"#95A5A6"};height:100%;border-radius:5px;transition:width .4s;"></div>
-          </div>
-          <span style="width:76px;font-size:12px;color:#333;text-align:right;">${cnt} HS (${pct}%)</span>
-        </div>`;
-    }).join("");
-    html += `
-      <div class="table-card" style="padding:14px;margin-bottom:16px;">
-        <div style="font-size:12px;font-weight:600;color:#5d6d7e;margin-bottom:12px;text-transform:uppercase;">📊 Phân Bổ Điểm – ${className}</div>
-        ${bars}
-      </div>`;
-  }
+  const body = document.createElement("p");
+  body.className = "sheet4-section-content";
+  body.textContent = content || "—";
 
-  // Top5 / Bottom5
-  const top5    = s4.top_students    || [];
-  const bottom5 = s4.bottom_students || [];
-  if (top5.length || bottom5.length) {
-    function studentRows(arr) {
-      return arr.map((s, i) => {
-        const sc = parseFloat(s.total_score) || 0;
-        const c  = scoreColor(sc);
-        return `<tr style="${i%2===1?"background:#f8f9fa;":""}">
-          <td style="padding:5px 8px;font-size:12px;color:#888;text-align:center;">${i+1}</td>
-          <td style="padding:5px 8px;font-weight:600;">${s.name||"—"}</td>
-          <td style="padding:5px 8px;font-size:12px;color:#888;">${s.id||"—"}</td>
-          <td style="padding:5px 8px;text-align:center;font-weight:700;color:${c.color};background:${c.bg};">${s.total_score??""}</td>
-        </tr>`;
-      }).join("") || `<tr><td colspan="4" style="padding:8px;color:#999;text-align:center;">—</td></tr>`;
-    }
-    html += `
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px;">
-        <div class="table-card" style="padding:14px;">
-          <div style="font-size:12px;font-weight:600;color:#1D6A39;margin-bottom:8px;text-transform:uppercase;">🏆 Top 5 Cao Nhất</div>
-          <table style="width:100%;border-collapse:collapse;font-size:13px;">
-            <thead><tr style="background:#D5F5E3;"><th style="padding:4px 8px;font-size:11px;color:#1D6A39;">#</th><th style="padding:4px 8px;font-size:11px;color:#1D6A39;text-align:left;">Họ tên</th><th style="padding:4px 8px;font-size:11px;color:#1D6A39;">Mã HS</th><th style="padding:4px 8px;font-size:11px;color:#1D6A39;">Điểm</th></tr></thead>
-            <tbody>${studentRows(top5)}</tbody>
-          </table>
-        </div>
-        <div class="table-card" style="padding:14px;">
-          <div style="font-size:12px;font-weight:600;color:#C0392B;margin-bottom:8px;text-transform:uppercase;">⚠️ Bottom 5 Thấp Nhất</div>
-          <table style="width:100%;border-collapse:collapse;font-size:13px;">
-            <thead><tr style="background:#FADBD8;"><th style="padding:4px 8px;font-size:11px;color:#C0392B;">#</th><th style="padding:4px 8px;font-size:11px;color:#C0392B;text-align:left;">Họ tên</th><th style="padding:4px 8px;font-size:11px;color:#C0392B;">Mã HS</th><th style="padding:4px 8px;font-size:11px;color:#C0392B;">Điểm</th></tr></thead>
-            <tbody>${studentRows(bottom5)}</tbody>
-          </table>
-        </div>
-      </div>`;
-  }
+  section.appendChild(heading);
+  section.appendChild(body);
+  return section;
+}
 
-  // Question stats — API mới không có question_stats riêng, bỏ qua block này
-  // (focus_questions sẽ hiển thị phía dưới)
-  const qStats = [];
-  if (qStats.length) {
-    const maxQ = Math.max(...qStats.map(q => parseFloat(q.avg_score)||0), 1);
-    const qRows = qStats.map((q, i) => {
-      const c   = scoreColor(q.avg_score);
-      const bar = Math.round((parseFloat(q.avg_score)||0) / maxQ * 100);
-      return `<tr style="${i%2===1?"background:#f8f9fa;":""}">
-        <td style="padding:7px 12px;font-weight:700;color:#2E86C1;width:70px;white-space:nowrap;">${q.question}</td>
-        <td style="padding:7px 12px;">
-          <div style="background:#e9ecef;border-radius:6px;height:14px;overflow:hidden;width:100%;">
-            <div style="width:${bar}%;background:${c.color};height:100%;border-radius:6px;transition:width .4s;"></div>
-          </div>
-        </td>
-        <td style="padding:7px 12px;text-align:center;width:90px;">
-          <span style="display:inline-block;padding:3px 10px;border-radius:12px;font-size:12px;font-weight:700;color:${c.color};background:${c.bg};">${q.avg_score}</span>
-        </td>
-      </tr>`;
-    }).join("");
-    html += `
-      <div class="table-card" style="padding:14px;margin-bottom:16px;">
-        <div style="font-size:12px;font-weight:600;color:#5d6d7e;margin-bottom:10px;text-transform:uppercase;">📝 Thống Kê Từng Câu Hỏi</div>
-        <table style="width:100%;border-collapse:collapse;font-size:13px;table-layout:fixed;">
-          <colgroup><col style="width:70px;"><col><col style="width:90px;"></colgroup>
-          <thead><tr style="background:#1A5276;">
-            <th style="padding:7px 12px;color:#fff;text-align:left;">Câu</th>
-            <th style="padding:7px 12px;color:#fff;text-align:left;">Phân bổ điểm</th>
-            <th style="padding:7px 12px;color:#fff;text-align:center;">ĐTB</th>
-          </tr></thead>
-          <tbody>${qRows}</tbody>
-        </table>
-      </div>`;
-  }
+function createSheet4ClassCard(item, index) {
+  const card = document.createElement("article");
+  card.className = "sheet4-card fade-in";
+  card.setAttribute("data-class-index", String(index));
 
-  // Focus questions + Action plan
-  const focusQ = s4.focus_questions || [];
-  if (focusQ.length || actions.length) {
-    const fqRows = focusQ.map((q, qi) => {
-      const c = scoreColor(q.avg_score);
-      return `<tr style="${qi%2===1?"background:#f8f9fa;":""}">
-        <td style="padding:5px 10px;font-weight:700;color:#C0392B;">${q.question??""}</td>
-        <td style="padding:5px 10px;text-align:center;"><span style="padding:2px 10px;border-radius:10px;font-weight:700;font-size:12px;color:${c.color};background:${c.bg};">${q.avg_score??""}</span></td>
-      </tr>`;
-    }).join("") || `<tr><td colspan="2" style="padding:8px;color:#999;">Không có</td></tr>`;
-    const apItems = actions.map((a, ai) =>
-      `<li style="margin-bottom:8px;padding:9px 14px;background:${ai%2===0?"#EBF5FB":"#F0FFF4"};border-left:3px solid ${ai%2===0?"#2E86C1":"#27AE60"};border-radius:4px;font-size:13px;color:#2c3e50;line-height:1.5;">${a}</li>`
-    ).join("") || `<li style="color:#999;">Không có kế hoạch</li>`;
-    html += `
-      <div class="table-card" style="padding:14px;margin-bottom:4px;">
-        <h3 style="margin:0 0 14px;font-size:15px;color:#1a5276;">🎯 Câu Cần Tập Trung & Kế Hoạch Hành Động</h3>
-        <div style="display:grid;grid-template-columns:1fr 2fr;gap:16px;">
-          <div style="background:#fafbfc;border:1px solid #e8ecf0;border-radius:10px;padding:12px;">
-            <div style="font-size:11px;font-weight:600;color:#C0392B;margin-bottom:8px;text-transform:uppercase;">🔴 Câu Cần Tập Trung</div>
-            <table style="width:100%;border-collapse:collapse;">
-              <thead><tr style="background:#FADBD8;"><th style="padding:4px 10px;font-size:12px;text-align:left;color:#922B21;">Câu</th><th style="padding:4px 10px;font-size:12px;text-align:center;color:#922B21;">ĐTB</th></tr></thead>
-              <tbody>${fqRows}</tbody>
-            </table>
-          </div>
-          <div style="background:#fafbfc;border:1px solid #e8ecf0;border-radius:10px;padding:12px;">
-            <div style="font-size:11px;font-weight:600;color:#1a5276;margin-bottom:8px;text-transform:uppercase;">📌 Kế Hoạch Hành Động</div>
-            <ol style="margin:0;padding-left:18px;">${apItems}</ol>
-          </div>
-        </div>
-      </div>`;
-  }
+  const header = document.createElement("header");
+  header.className = "sheet4-card-header";
 
-  return html;
+  const title = document.createElement("h2");
+  title.className = "sheet4-card-title";
+  title.textContent = item.class_name || "Lớp chưa đặt tên";
+
+  header.appendChild(title);
+  card.appendChild(header);
+
+  const body = document.createElement("div");
+  body.className = "sheet4-card-body";
+  body.appendChild(createSheet4Section("Số học", item.so_hoc));
+  body.appendChild(createSheet4Section("Tư duy toán", item.tu_duy_toan));
+  body.appendChild(createSheet4Section("Xếp loại", item.xep_loai));
+
+  card.appendChild(body);
+  return card;
 }
 
 // ══════════════════════════════════════════════════════════════
@@ -1964,45 +1769,15 @@ function exportExcelFromAPI() {
     XLSX.utils.book_append_sheet(wb, ws3, "Hoc Sinh Yeu");
   }
 
-  // ── SHEET 4 — Phân tích Lớp (mỗi lớp 1 dòng, cấu trúc API thực tế) ──
+  // ── SHEET 4 — Phân tích Lớp (schema tối giản: class_name/so_hoc/tu_duy_toan/xep_loai) ──
   if (apiSheet4Data.length) {
-    // Mỗi phần tử trong apiSheet4Data = 1 lớp: { class_name, summary, histogram, insights, top_students, bottom_students, hardest_question, easiest_question, focus_questions, action_plan }
+    // Mỗi phần tử trong apiSheet4Data = 1 lớp: { class_name, so_hoc, tu_duy_toan, xep_loai }
     const s4Flat = apiSheet4Data.map(cls => {
-      const smr  = cls.summary           || {};
-      const hist = cls.histogram         || {};
-      const hardQ = cls.hardest_question || {};
-      const easyQ = cls.easiest_question || {};
-
-      const histRanges = hist.ranges || [];
-      const histCounts = hist.counts || [];
-      const histStr    = histRanges.map((r, i) => `${r}: ${histCounts[i] ?? 0}`).join(" | ") || "—";
-
-      const focusQ = cls.focus_questions || [];
-      const fqStr  = focusQ.map(q => `${q.question}(ĐTB:${q.avg_score})`).join(", ") || "—";
-
-      const ap    = cls.action_plan || [];
-      const apStr = ap.map((a, i) => `${i+1}. ${a}`).join("\n") || "—";
-
-      const top5str    = (cls.top_students    || []).map(s => `${s.name}(${s.total_score})`).join(", ") || "—";
-      const bottom5str = (cls.bottom_students || []).map(s => `${s.name}(${s.total_score})`).join(", ") || "—";
-
       return {
-        "Lớp":                cls.class_name           || "—",
-        "Sĩ số":              smr.total_students        ?? "",
-        "Điểm TB":            smr.avg_score             ?? "",
-        "Điểm Max":           smr.max_score             ?? "",
-        "Điểm Min":           smr.min_score             ?? "",
-        "Dưới TB (%)":        smr.below_avg_percent     ?? "",
-        "Xếp loại lớp":       smr.level                 || "—",
-        "Câu khó nhất":       hardQ.question            || "—",
-        "ĐTB câu khó":        hardQ.avg_score           ?? "",
-        "Câu dễ nhất":        easyQ.question            || "—",
-        "ĐTB câu dễ":         easyQ.avg_score           ?? "",
-        "Phân Bổ Điểm":       histStr,
-        "Câu Cần Tập Trung":  fqStr,
-        "Top 5 HS":           top5str,
-        "Bottom 5 HS":        bottom5str,
-        "Kế Hoạch Hành Động": apStr,
+        "Lớp": cls.class_name || "—",
+        "Số học": cls.so_hoc || "—",
+        "Tư duy toán": cls.tu_duy_toan || "—",
+        "Xếp loại": cls.xep_loai || "—",
       };
     });
 
@@ -2010,66 +1785,19 @@ function exportExcelFromAPI() {
     const ws4 = XLSX.utils.json_to_sheet(s4Flat);
 
     ws4["!cols"] = [
-      { wch: 16 }, // Lớp
-      { wch: 8  }, // Sĩ số
-      { wch: 10 }, // Điểm TB
-      { wch: 10 }, // Điểm Max
-      { wch: 10 }, // Điểm Min
-      { wch: 12 }, // Dưới TB %
-      { wch: 14 }, // Xếp loại
-      { wch: 14 }, // Câu khó nhất
-      { wch: 12 }, // ĐTB câu khó
-      { wch: 14 }, // Câu dễ nhất
-      { wch: 12 }, // ĐTB câu dễ
-      { wch: 38 }, // Phân bổ
-      { wch: 30 }, // Câu cần tập trung
-      { wch: 36 }, // Top 5
-      { wch: 36 }, // Bottom 5
-      { wch: 64 }, // Kế hoạch
+      { wch: 18 },
+      { wch: 36 },
+      { wch: 36 },
+      { wch: 44 },
     ];
     ws4["!rows"] = [{ hpt: 30 }];
 
     applyHeader(ws4, keys);
     freezeTop(ws4);
 
-    const scoreIdx4 = keys.indexOf("Điểm TB");
-    const belowIdx4 = keys.indexOf("Dưới TB (%)");
-    const levelIdx4 = keys.indexOf("Xếp loại lớp");
-    const apIdx4    = keys.indexOf("Kế Hoạch Hành Động");
-
     s4Flat.forEach((row, ri) => {
       const rowIdx = ri + 1;
       applyRowBase(ws4, rowIdx, keys.length, ri % 2 === 1);
-
-      // Điểm TB (thang 10)
-      if (scoreIdx4 >= 0) {
-        const d = parseFloat(row["Điểm TB"]) || 0;
-        if (d > 0) {
-          if (d < 4)        setCell(ws4, rowIdx, scoreIdx4, { ...S.fail, alignment: { horizontal: "center" } });
-          else if (d < 6.5) setCell(ws4, rowIdx, scoreIdx4, { ...S.pass, alignment: { horizontal: "center" } });
-          else              setCell(ws4, rowIdx, scoreIdx4, { ...S.exc,  alignment: { horizontal: "center" } });
-        }
-      }
-      // Dưới TB %
-      if (belowIdx4 >= 0) {
-        const pct = parseFloat(row["Dưới TB (%)"]) || 0;
-        if (pct >= 40)      setCell(ws4, rowIdx, belowIdx4, { ...S.fail, alignment: { horizontal: "center" } });
-        else if (pct >= 20) setCell(ws4, rowIdx, belowIdx4, { ...S.pass, alignment: { horizontal: "center" } });
-        else                setCell(ws4, rowIdx, belowIdx4, { ...S.exc,  alignment: { horizontal: "center" } });
-      }
-      // Xếp loại lớp
-      if (levelIdx4 >= 0) {
-        const lv = row["Xếp loại lớp"] || "";
-        const lvMap = { "Xuất sắc": S.exc, "Tốt": S.exc, "Khá": S.pass, "Trung bình": S.pass, "Yếu": S.fail, "Kém": S.fail };
-        const st = lvMap[lv];
-        if (st) setCell(ws4, rowIdx, levelIdx4, { ...st, alignment: { horizontal: "center" } });
-      }
-      // Kế hoạch hành động: wrap text
-      if (apIdx4 >= 0) {
-        const addr = XLSX.utils.encode_cell({ r: rowIdx, c: apIdx4 });
-        if (!ws4[addr]) ws4[addr] = { v: "", t: "s" };
-        ws4[addr].s = { ...(ws4[addr].s || {}), alignment: { wrapText: true, vertical: "top" } };
-      }
     });
 
     XLSX.utils.book_append_sheet(wb, ws4, "Phan Tich Lop");
@@ -2383,7 +2111,7 @@ function generateStudentPDFFromAPI(studentRow) {
     const stdCode = (s1Row && (s1Row["standard_code"] || s1Row["Standard Code"]))
       || extractStdCodeFromKey(key)
       || `C${cauNum}`;
-    const suggest = v(String(s1Row ? (s1Row["suggestion"] || s1Row["Suggestion"] || "") : ""));
+    const suggest = v(String(s1Row ? (s1Row["suggestion"] || s1Row["Suggestion"] || s1Row["nhan_xet"] || "") : ""));
 
     // Tính số dòng Goi Y cần
     const goiYLines = doc.splitTextToSize(suggest, goiYMaxW);
